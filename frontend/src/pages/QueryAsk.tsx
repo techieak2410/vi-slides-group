@@ -50,7 +50,6 @@ const QueryAsk: React.FC = () => {
         fetchInitialData();
     }, [code, fetchQuestions]);
 
-    // Auto-refresh every 5 seconds
     useEffect(() => {
         if (!sessionInfo?._id) return;
 
@@ -78,7 +77,7 @@ const QueryAsk: React.FC = () => {
 
             if (response.success) {
                 setSuccess(true);
-                setFormData({ ...formData, question: '' }); // Clear only question
+                setFormData({ ...formData, question: '' });
                 await fetchQuestions(sessionInfo._id, true);
                 setTimeout(() => setSuccess(false), 5000);
             }

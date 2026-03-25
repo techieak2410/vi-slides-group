@@ -19,24 +19,20 @@ const QueryPPTView: React.FC = () => {
     useEffect(() => {
         const initQueryMode = async () => {
             try {
-                // 1. Get/Create the persistent query session
                 const sResponse = await sessionService.getQuerySession();
                 if (sResponse.success) {
                     setSession(sResponse.data);
 
-                    // 2. Fetch existing questions
                     const qResponse = await questionService.getSessionQuestions(sResponse.data._id);
                     if (qResponse.success) {
                         setQuestions(qResponse.data);
                     }
 
-                    // 3. Connect to Socket and listen for new questions
                     socketService.connect();
                     socketService.joinSession({ sessionCode: sResponse.data.code, user });
 
                     socketService.onNewQuestion((newQ: Question) => {
                         setQuestions(prev => {
-                            // Avoid duplicates
                             if (prev.find(q => q._id === newQ._id)) return prev;
                             return [...prev, newQ];
                         });
@@ -59,7 +55,6 @@ const QueryPPTView: React.FC = () => {
         };
     }, []);
 
-    // Manual refresh handler using GET (find many) API
     const handleRefreshQuestions = async () => {
         if (!session?._id) return;
         setIsRefreshing(true);
@@ -76,7 +71,6 @@ const QueryPPTView: React.FC = () => {
         }
     };
 
-    // Auto refresh every 5 seconds (polling fallback if sockets fail)
     useEffect(() => {
         if (!session?._id || !autoRefresh) return;
 
@@ -106,11 +100,10 @@ const QueryPPTView: React.FC = () => {
         }
     };
 
-    const totalSlides = questions.length + 1; // +1 for QR slide
+    const totalSlides = questions.length + 1;
 
     return (
         <div style={{ display: 'flex', height: '100vh', background: '#0a0a0c', color: 'white', overflow: 'hidden' }}>
-            {/* Sidebar */}
             <div style={{
                 width: '250px',
                 background: '#16161e',
@@ -128,7 +121,6 @@ const QueryPPTView: React.FC = () => {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {/* QR Code Slide Thumbnail */}
                     <div
                         onClick={() => setCurrentSlide(0)}
                         style={{
@@ -154,7 +146,6 @@ const QueryPPTView: React.FC = () => {
                         <p style={{ fontSize: '0.75rem', marginTop: '4px', textAlign: 'center' }}>QR Code</p>
                     </div>
 
-                    {/* Question Slides Thumbnails */}
                     {questions.map((q, i) => (
                         <div
                             key={q._id}
@@ -203,7 +194,6 @@ const QueryPPTView: React.FC = () => {
                 </div>
             </div>
 
-            {/* Main Content Area */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem' }}>
                     {loading ? (
@@ -247,7 +237,6 @@ const QueryPPTView: React.FC = () => {
                     )}
                 </div>
 
-                {/* Navigation Bar */}
                 <div style={{
                     height: '80px', background: '#16161e', borderTop: '1px solid #2d2d3a',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem'

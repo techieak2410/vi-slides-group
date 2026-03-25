@@ -12,24 +12,37 @@ import AssignmentDetails from './pages/AssignmentDetails';
 import GuestJoinForm from './pages/GuestJoinForm';
 import QueryPPTView from './pages/QueryPPTView';
 import QueryAsk from './pages/QueryAsk';
-
+import TeacherDashboard from './pages/teacher/TeacherDashboard';
+import StudentDashboard from './pages/student/StudentDashboard';
+import TestComponent from './components/TestComponent';
 const App: React.FC = () => {
     return (
         <AuthProvider>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <Routes>
+                    <Route path='/test' element={<TestComponent/>}/>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     {/* Public route for guest join and query ask */}
                     <Route path="/join/:code" element={<GuestJoinForm />} />
                     <Route path="/ask/:code" element={<QueryAsk />} />
                     <Route
-                        path="/dashboard"
+                        path="/teacher-dashboard"
                         element={
                             <ProtectedRoute>
-                                <Dashboard />
+                                <TeacherDashboard/>
                             </ProtectedRoute>
                         }
+                    />
+
+                    <Route
+                    path='/student-dashboard'
+
+                    element={
+                        <ProtectedRoute>
+                            <StudentDashboard/>
+                        </ProtectedRoute>
+                    }
                     />
                     <Route
                         path="/session/:code"

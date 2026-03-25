@@ -1,8 +1,10 @@
 // vite.config.ts
 import { defineConfig } from "file:///D:/vi-slides/frontend/node_modules/vite/dist/node/index.js";
 import react from "file:///D:/vi-slides/frontend/node_modules/@vitejs/plugin-react/dist/index.js";
+import tailwindcss from '@tailwindcss/vite'
+
 var vite_config_default = defineConfig({
-  plugins: [react()],
+  plugins: [react(),tailwindcss()],
   server: {
     port: 5173,
     open: true

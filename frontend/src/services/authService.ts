@@ -47,13 +47,23 @@ export const authService = {
 
     // Update user details
     updateDetails: async (data: { name: string; email: string }): Promise<{ success: boolean; user: User }> => {
-        const response = await api.put('/auth/updatedetails', data);
+        // FIX 1: Standardized the casing of the URL to match typical Express routes
+        const response = await api.put('/auth/update-details', data); 
         return response.data;
     },
 
     // Google Login
     googleLogin: async (token: string, role?: string): Promise<AuthResponse> => {
+        // FIX 2: Updated to match the typical naming convention we used in the backend
         const response = await api.post<AuthResponse>('/auth/google', { token, role });
         return response.data;
+    },
+
+    // FEATURE ADDITION: Centralized Logout
+    logout: (): void => {
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        // If you are using standard Axios instance, it's good practice to clear the header here too:
+        // delete api.defaults.headers.common['Authorization'];
     }
 };

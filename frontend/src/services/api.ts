@@ -10,7 +10,6 @@ const api = axios.create({
     }
 });
 
-// Request interceptor to add token to requests
 api.interceptors.request.use(
     (config) => {
         const token = sessionStorage.getItem('token');
@@ -24,12 +23,11 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle errors
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Token expired or invalid
+
             sessionStorage.removeItem('token');
             sessionStorage.removeItem('user');
             window.location.href = '/login';

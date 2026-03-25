@@ -26,7 +26,6 @@ const SessionSummary: React.FC = () => {
         }
     }, [summaryData]);
 
-    // If no data is present (e.g., direct link), redirect to dashboard
     if (!summaryData) {
         return (
             <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
@@ -45,7 +44,6 @@ const SessionSummary: React.FC = () => {
         <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '2rem' }}>
             <div className="container" style={{ maxWidth: '800px' }}>
 
-                {/* Success Header */}
                 <div className="text-center mb-5 anim-fade-in">
                     <div style={{
                         width: '64px',
@@ -84,7 +82,6 @@ const SessionSummary: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Attendance Report (Teacher Only) */}
                 {user?.role === 'Teacher' && sessionDetails?.attendance && sessionDetails.attendance.length > 0 && (
                     <div className="glass-card anim-slide-up" style={{ padding: '2rem', marginBottom: '2rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -103,31 +100,23 @@ const SessionSummary: React.FC = () => {
                                 </thead>
                                 <tbody>
                                     {(() => {
-                                        // 1. Filter out teacher and consolidate student records
                                         const uniqueStudents = new Map<string, typeof sessionDetails.attendance[0]>();
 
                                         sessionDetails.attendance.forEach(record => {
-                                            // Skip if it's the teacher
                                             if (record.email === user.email || record.student === (sessionDetails.teacher._id || sessionDetails.teacher)) {
                                                 return;
                                             }
 
-                                            // Determine key (prefer ID, fallback to email)
                                             const key = record.student || record.email;
                                             const existing = uniqueStudents.get(key);
 
                                             if (!existing) {
-                                                // Clone to avoid mutating original
                                                 uniqueStudents.set(key, { ...record });
                                             } else {
-                                                // Keep earliest join time
                                                 if (new Date(record.joinTime) < new Date(existing.joinTime)) {
                                                     existing.joinTime = record.joinTime;
                                                 }
 
-                                                // Logic for leave time:
-                                                // If CURRENT or EXISTING is active (no leaveTime), the student is considered ACTIVE (leaveTime = undefined)
-                                                // Else, take the LATEST leave time
 
                                                 if (!record.leaveTime || !existing.leaveTime) {
                                                     existing.leaveTime = undefined;
@@ -162,7 +151,6 @@ const SessionSummary: React.FC = () => {
                     </div>
                 )}
 
-                {/* AI Mood Summary */}
                 <div className="glass-card anim-slide-up" style={{ padding: '2.5rem', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                         <div style={{ fontSize: '1.5rem' }}>🤖</div>
@@ -181,7 +169,6 @@ const SessionSummary: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Actions */}
                 <div className="text-center mt-7" style={{ marginTop: '2rem' }}>
                     <button
                         onClick={() => navigate('/dashboard')}
