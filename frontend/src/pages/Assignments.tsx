@@ -162,7 +162,7 @@ const Assignments: React.FC = () => {
                         </p>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
+                        <button onClick={() => navigate('/student-dashboard')} className="btn btn-secondary">
                             ← Back to Dashboard
                         </button>
                         {isTeacher && (
