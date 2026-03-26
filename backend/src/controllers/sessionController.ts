@@ -461,6 +461,33 @@ export const getOrCreateQuerySession = async (req: Request, res: Response): Prom
     }
 };
 
+
+// @desc    Get all sessions created by a teacher
+// @route   GET /api/sessions/teacher/history
+// @access  Private (Teacher only)
+export const getTeacherSessions = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+
+        // Find sessions where this user is the teacher
+        const sessions = await Session.find({
+            teacher: userId
+        })
+        .sort({ createdAt: -1 }); // Newest sessions first
+
+        res.status(200).json({
+            success: true,
+            data: sessions
+        });
+    } catch (error) {
+        console.error('Get teacher sessions error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error fetching teacher session history'
+        });
+    }
+};
+
 // @desc    Update custom query URL
 // @route   PATCH /api/sessions/query-mode/url
 // @access  Private (Teacher only)

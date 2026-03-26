@@ -14,6 +14,8 @@ import {
 } from '../controllers/sessionController';
 import { protect, authorize } from '../middleware/auth';
 
+import { getTeacherSessions } from '../controllers/sessionController';
+
 const router = express.Router();
 
 // Apply protection to all routes
@@ -72,4 +74,5 @@ router.patch('/:id/pause', authorize('Teacher'), pauseSession);
 // @desc    Leave a session
 router.post('/:code/leave', leaveSession);
 
+router.get('/teacher/history', authorize('Teacher'), getTeacherSessions);
 export default router;
