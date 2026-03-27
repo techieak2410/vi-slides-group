@@ -3,14 +3,13 @@ import Poll from '../models/Poll';
 import Session from '../models/Session';
 import { emitToSession } from '../config/socket';
 import User from '../models/User';
-import { Types } from 'mongoose';
 
 // @desc    Create a new poll
 // @route   POST /api/polls
 // @access  Private (Teacher only)
 export const createPoll = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { question, type, options, sessionId } = req.body;
+        const { question, type, options, sessionId, timerEnabled, timerDuration } = req.body;
 
         if (!question || !sessionId || !options || options.length < 2) {
             res.status(400).json({ success: false, message: 'Invalid poll data' });
@@ -36,10 +35,20 @@ export const createPoll = async (req: Request, res: Response): Promise<void> => 
             question,
             type,
             options: options.map((opt: string) => ({ text: opt, votes: 0 })),
-            session: sessionId
+            session: sessionId,
+            timerEnabled: timerEnabled || false,
+            timerDuration: timerDuration || 0,
+            timerStartedAt: timerEnabled ? new Date() : null
         });
 
         emitToSession(session.code, 'new_poll', poll);
+
+        // If timer is enabled, set up auto-close
+        if (timerEnabled && timerDuration > 0) {
+            setTimeout(() => {
+                closePollByTimer(poll._id.toString(), session.code);
+            }, timerDuration * 1000);
+        }
 
         res.status(201).json({
             success: true,
@@ -82,8 +91,26 @@ export const votePoll = async (req: Request, res: Response): Promise<void> => {
             poll.responses.push({
                 user: req.user._id,
                 optionIndex,
-                name: req.user.name || 'Unknown'
+                name: req.user.name || 'Unknown',
+                votedAt: new Date()
             });
+        }
+
+        // If timer is enabled, mark this student's timer as ended
+        if (poll.timerEnabled) {
+            const userIdStr = req.user?._id.toString() || '';
+            const existingTimer = poll.studentTimers.find(t => t.userId === userIdStr);
+            
+            if (existingTimer) {
+                existingTimer.timerEnded = true;
+                existingTimer.endedAt = new Date();
+            } else {
+                poll.studentTimers.push({
+                    userId: userIdStr,
+                    timerEnded: true,
+                    endedAt: new Date()
+                });
+            }
         }
 
         await poll.save();
@@ -93,6 +120,14 @@ export const votePoll = async (req: Request, res: Response): Promise<void> => {
 
         const session = poll.session as any;
         emitToSession(session.code, 'poll_update', poll);
+
+        // Emit student timer stopped event
+        if (poll.timerEnabled) {
+            emitToSession(session.code, 'student_timer_stopped', {
+                pollId: poll._id,
+                userId: req.user?._id
+            });
+        }
 
         // Emit points update so leaderboard reflects the change instantly
         if (updatedUser) {
@@ -194,29 +229,27 @@ export const declarePollWinner = async (req: Request, res: Response): Promise<vo
             await User.findByIdAndUpdate(winner.user, { $inc: { points: 50 } });
         }
 
-        // Save the chosen answer for query usage
-        poll.correctOptionIndex = optionIndex;
-        poll.isActive = false;
-        await poll.save();
-
-        // Notify everyone about the chosen correct answer
+        // Emit celebration event! 
         emitToSession(session.code, 'poll_winner_declared', {
             pollId: poll._id,
             winningOptionIndex: optionIndex,
             winningOptionText: poll.options[optionIndex].text,
-            winnerCount: winners.length,
-            winnerIds: winners.map((w: any) => w.user.toString()) // Include winner IDs for frontend filtering
+            winnerCount: winners.length
         });
 
-        // Emit poll update so UI refreshes
-        emitToSession(session.code, 'poll_update', poll);
-
-        // Trigger confetti ONLY for winning students (backend sends winner IDs)
+        // Trigger confetti for everyone
         emitToSession(session.code, 'celebration', {
             type: 'confetti',
-            duration: 10000,
-            winnerIds: winners.map((w: any) => w.user.toString())
+            duration: 5000
         });
+
+        // Also emit points update for each winner so leaderboards refresh
+        for (const winner of winners) {
+            const updatedUser = await User.findById(winner.user);
+            if (updatedUser) {
+                emitToSession(session.code, 'points_updated', { userId: winner.user, points: updatedUser.points, name: updatedUser.name });
+            }
+        }
 
         res.status(200).json({
             success: true,
@@ -227,5 +260,19 @@ export const declarePollWinner = async (req: Request, res: Response): Promise<vo
         console.error('Declare winner error:', error);
         res.status(500).json({ success: false, message: 'Server error declaring winner' });
     }
-}
+};
 
+// @desc    Helper function to auto-close poll when timer expires
+// @access  Internal
+const closePollByTimer = async (pollId: string, sessionCode: string): Promise<void> => {
+    try {
+        const poll = await Poll.findById(pollId);
+        if (poll && poll.isActive) {
+            poll.isActive = false;
+            await poll.save();
+            emitToSession(sessionCode, 'poll_timer_expired', poll);
+        }
+    } catch (error) {
+        console.error('Close poll by timer error:', error);
+    }
+};

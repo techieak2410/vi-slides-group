@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { pollService } from '../services/pollService';
-import { FiBarChart2, FiX, FiSend } from 'react-icons/fi';
 
 interface PollCreatorProps {
     sessionId: string;
@@ -12,6 +11,8 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
     const [options, setOptions] = useState(['', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [timerEnabled, setTimerEnabled] = useState(false);
+    const [timerDuration, setTimerDuration] = useState(30);
 
     const handleAddOption = () => {
         if (options.length < 5) {
@@ -47,18 +48,27 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
             return;
         }
 
+        if (timerEnabled && (!timerDuration || timerDuration <= 0)) {
+            setError('Please enter a valid timer duration');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await pollService.createPoll({
                 question,
                 type: 'mcq',
                 options: filteredOptions,
-                sessionId
+                sessionId,
+                timerEnabled,
+                timerDuration
             });
 
             if (response.success) {
                 setQuestion('');
                 setOptions(['', '']);
+                setTimerEnabled(false);
+                setTimerDuration(30);
                 onPollCreated(response.data);
             }
         } catch (err: any) {
@@ -71,7 +81,7 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
     return (
         <div className="glass-card anim-slide-up" style={{ padding: '1.5rem', marginBottom: '2rem', border: '1px solid var(--color-primary-light)' }}>
             <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', color: 'var(--color-primary)' }}><FiBarChart2 size={24} /></span> Create Live Poll
+                <span style={{ fontSize: '1.5rem' }}>📊</span> Create Live Poll
             </h3>
 
             <form onSubmit={handleCreatePoll}>
@@ -103,9 +113,9 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveOption(index)}
-                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem', display: 'flex', alignItems: 'center' }}
+                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem' }}
                                 >
-                                    <FiX size={16} />
+                                    ✕
                                 </button>
                             )}
                         </div>
@@ -122,6 +132,36 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
                     )}
                 </div>
 
+                <div className="form-group mb-3">
+                    <label className="form-label" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                            type="checkbox"
+                            checked={timerEnabled}
+                            onChange={(e) => setTimerEnabled(e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        <span>⏱️ Enable Timer</span>
+                    </label>
+                </div>
+
+                {timerEnabled && (
+                    <div className="form-group mb-3">
+                        <label className="form-label" style={{ fontSize: '0.85rem' }}>Timer Duration (seconds)</label>
+                        <input
+                            type="number"
+                            className="form-input"
+                            min="5"
+                            max="300"
+                            step="5"
+                            value={timerDuration}
+                            onChange={(e) => setTimerDuration(parseInt(e.target.value) || 30)}
+                        />
+                        <small style={{ color: 'var(--color-text-muted)', display: 'block', marginTop: '0.25rem' }}>
+                            Students' timer will stop when they submit an answer
+                        </small>
+                    </div>
+                )}
+
                 {error && <div className="alert alert-error" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</div>}
 
                 <button
@@ -130,7 +170,7 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
                     style={{ width: '100%', padding: '0.75rem' }}
                     disabled={loading}
                 >
-                    {loading ? <div className="spinner" style={{ width: '18px', height: '18px' }}></div> : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><FiSend size={18} /> Launch Live Poll</span>}
+                    {loading ? <div className="spinner" style={{ width: '18px', height: '18px' }}></div> : '🚀 Launch Live Poll'}
                 </button>
             </form>
         </div>
