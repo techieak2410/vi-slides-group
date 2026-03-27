@@ -4,23 +4,22 @@ import { useAuth } from '../contexts/AuthContext';
 import { sessionService, Session } from '../services/sessionService';
 import { questionService, Question } from '../services/questionService';
 import { socketService } from '../services/socketService';
-import QuestionInput from '../components/QuestionInput';
-import QuestionCard from '../components/QuestionCard';
-import PollCreator from '../components/PollCreator';
-import PollCard from '../components/PollCard';
+import QuestionCard from '../components/QuestionCard';import PollCard from '../components/PollCard';
 import { pollService, Poll } from '../services/pollService';
 import Toast from '../components/Toast';
 import Whiteboard from '../components/Whiteboard';
-import EngagementControls from '../components/EngagementControls';
-import EngagementTeacherView from '../components/EngagementTeacherView';
 import Leaderboard from '../components/Leaderboard';
 import PrivateChat from '../components/PrivateChat';
 import CelebrationModal from '../components/CelebrationModal';
+import TeacherSessionView from './TeacherSessionView';
+import StudentSessionView from './StudentSessionView';
+import { useTheme } from '../contexts/ThemeContext';
 
 const SessionView: React.FC = () => {
     const { code } = useParams<{ code: string }>();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const { theme, toggleTheme } = useTheme();
 
     const [session, setSession] = useState<Session | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
@@ -518,20 +517,21 @@ const SessionView: React.FC = () => {
 
 
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+        <div style={{ minHeight: '100vh', background: 'var(--color-bg)', color: 'var(--color-text-primary)' }}>
             {/* Session Header */}
             <nav style={{
-                background: 'var(--color-bg-secondary)',
-                opacity: 0.95,
+                background: 'var(--color-surface)',
+                opacity: 0.98,
                 backdropFilter: 'blur(10px)',
-                borderBottom: '1px solid var(--color-surface)',
+                borderBottom: '1px solid rgba(125, 125, 125, 0.2)',
                 padding: '1rem 2rem',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 position: 'sticky',
                 top: 0,
-                zIndex: 100
+                zIndex: 100,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
             }}>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -564,30 +564,24 @@ const SessionView: React.FC = () => {
 
 
                     {user?.role?.toLowerCase() === 'teacher' ? (
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                             <button
                                 onClick={() => setShowQRModal(true)}
                                 className="btn btn-secondary"
                                 style={{
-                                    background: 'rgba(236, 72, 153, 0.1)',
-                                    color: '#ec4899',
-                                    borderColor: 'rgba(236, 72, 153, 0.2)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.4rem'
                                 }}
                                 title="Show Join Code"
                             >
-                                <span style={{ fontSize: '1.2rem' }}>📱</span>
+                                📱
                             </button>
                             <div style={{ position: 'relative' }}>
                                 <button
                                     onClick={() => setShowExportOptions(!showExportOptions)}
                                     className="btn btn-secondary"
                                     style={{
-                                        background: 'rgba(99, 102, 241, 0.1)',
-                                        color: 'var(--color-primary-light)',
-                                        borderColor: 'rgba(99, 102, 241, 0.2)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '0.4rem'
@@ -603,7 +597,7 @@ const SessionView: React.FC = () => {
                                         left: 0,
                                         marginTop: '0.5rem',
                                         background: 'var(--color-surface)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        border: '1px solid rgba(125,125,125,0.2)',
                                         borderRadius: 'var(--radius-sm)',
                                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
                                         zIndex: 1000,
@@ -615,16 +609,16 @@ const SessionView: React.FC = () => {
                                                 handleExportPDF();
                                                 setShowExportOptions(false);
                                             }}
-                                            style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.85rem' }}
-                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                            style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(125,125,125,0.1)'}
                                             onMouseOut={(e) => e.currentTarget.style.background = 'none'}
                                         >
                                             📄 PDF Document
                                         </button>
                                         <button
                                             onClick={exportToCSV}
-                                            style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.85rem' }}
-                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                            style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(125,125,125,0.1)'}
                                             onMouseOut={(e) => e.currentTarget.style.background = 'none'}
                                         >
                                             📊 CSV Spreadsheet
@@ -636,9 +630,8 @@ const SessionView: React.FC = () => {
                                 onClick={() => setShowPollCreator(!showPollCreator)}
                                 className="btn btn-secondary"
                                 style={{
-                                    background: showPollCreator ? 'var(--color-primary)' : 'rgba(99, 102, 241, 0.1)',
-                                    color: showPollCreator ? 'white' : 'var(--color-primary-light)',
-                                    borderColor: 'rgba(99, 102, 241, 0.2)'
+                                    background: showPollCreator ? 'var(--color-primary)' : '',
+                                    color: showPollCreator ? 'white' : ''
                                 }}
                                 title="Manage Polls"
                             >
@@ -659,9 +652,8 @@ const SessionView: React.FC = () => {
                                 onClick={() => setShowEngagement(!showEngagement)}
                                 className="btn btn-secondary"
                                 style={{
-                                    background: showEngagement ? 'var(--color-primary)' : 'rgba(99, 102, 241, 0.1)',
-                                    color: showEngagement ? 'white' : 'var(--color-primary-light)',
-                                    borderColor: 'rgba(99, 102, 241, 0.2)'
+                                    background: showEngagement ? 'var(--color-primary)' : '',
+                                    color: showEngagement ? 'white' : ''
                                 }}
                                 title="View Student Engagement"
                             >
@@ -681,11 +673,10 @@ const SessionView: React.FC = () => {
                                     socketService.emitWhiteboardOpen(code || '');
                                 }}
                                 className="btn btn-secondary"
-                                style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--color-primary-light)', borderColor: 'rgba(99, 102, 241, 0.2)' }}
                             >
                                 Open Whiteboard
                             </button>
-                            <button onClick={handleEndSession} className="btn btn-secondary" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                            <button onClick={handleEndSession} className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
                                 End Session
                             </button>
                         </div>
@@ -695,7 +686,6 @@ const SessionView: React.FC = () => {
                                 <button
                                     onClick={() => setShowWhiteboard(true)}
                                     className="btn btn-secondary"
-                                    style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--color-primary-light)', borderColor: 'rgba(99, 102, 241, 0.2)', fontSize: '0.9rem' }}
                                     title="View teacher's whiteboard"
                                 >
                                     📋 View Whiteboard
@@ -706,6 +696,14 @@ const SessionView: React.FC = () => {
                             </button>
                         </div>
                     )}
+                    <div style={{ marginLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid rgba(125,125,125,0.2)', paddingLeft: '1.5rem' }}>
+                        <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', borderRadius: '50px' }}>
+                            {theme === 'dark' ? '☀️' : '🌙'}
+                        </button>
+                        <button onClick={logout} className="btn btn-primary" style={{ padding: '0.4rem 1.2rem', fontWeight: 600 }}>
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </nav >
             {error && <div className="container" style={{ marginTop: '1rem' }}><div className="alert alert-error">{error}</div></div>}
@@ -860,18 +858,31 @@ const SessionView: React.FC = () => {
                         </button>
                     )}
 
-                    {/* Polls at Top of Center */}
-                    <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto 2rem auto' }}>
-                        {isTeacher && showPollCreator && (
-                            <PollCreator
-                                sessionId={session?._id || ''}
-                                onPollCreated={(poll) => {
-                                    setActivePoll(poll);
-                                    setShowPollCreator(false);
-                                }}
-                            />
-                        )}
+                    {/* Render specific views */}
+                    {isTeacher ? (
+                        <TeacherSessionView
+                            session={session}
+                            questions={questions}
+                            code={code || ''}
+                            socketService={socketService}
+                            activePoll={activePoll}
+                            setActivePoll={setActivePoll}
+                            showPollCreator={showPollCreator}
+                            setShowPollCreator={setShowPollCreator}
+                            showEngagement={showEngagement}
+                            setShowEngagement={setShowEngagement}
+                            pulseCheckResults={pulseCheckResults}
+                            setToast={setToast}
+                        />
+                    ) : (
+                        <StudentSessionView
+                            session={session}
+                            code={code || ''}
+                            user={user}
+                        />
+                    )}
 
+                    <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto 2rem auto' }}>
                         {activePoll && (
                             <PollCard
                                 poll={activePoll}
@@ -879,57 +890,7 @@ const SessionView: React.FC = () => {
                                 onClose={() => setActivePoll(null)}
                             />
                         )}
-
-                        {user?.role?.toLowerCase() === 'student' && (
-                            <div style={{ marginBottom: '1rem' }}>
-                                <EngagementControls sessionCode={code || ''} user={user} />
-                                <QuestionInput sessionId={session?._id || ''} sessionStatus={session?.status || 'active'} />
-                            </div>
-                        )}
                     </div>
-
-                    {/* Engagement Popup Overlay (Teacher Only) */}
-                    {isTeacher && showEngagement && (
-                        <div
-                            className="anim-slide-down"
-                            style={{
-                                position: 'absolute',
-                                top: '1rem',
-                                right: '1rem',
-                                width: '400px',
-                                maxWidth: '90vw',
-                                zIndex: 1000,
-                                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)'
-                            }}
-                        >
-                            <div style={{ position: 'relative' }}>
-                                <button
-                                    onClick={() => setShowEngagement(false)}
-                                    style={{
-                                        position: 'absolute',
-                                        top: '0.5rem',
-                                        right: '0.5rem',
-                                        background: 'rgba(255,255,255,0.1)',
-                                        border: 'none',
-                                        color: 'var(--color-text-muted)',
-                                        cursor: 'pointer',
-                                        fontSize: '1.2rem',
-                                        width: '28px',
-                                        height: '28px',
-                                        borderRadius: '50%',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        zIndex: 10
-                                    }}
-                                    title="Close"
-                                >
-                                    ×
-                                </button>
-                                <EngagementTeacherView />
-                            </div>
-                        </div>
-                    )}
 
                     {/* Spotlight Question */}
                     <div style={{
