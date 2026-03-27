@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { pollService } from '../services/pollService';
+import { FiBarChart2, FiX, FiSend } from 'react-icons/fi';
 
 interface PollCreatorProps {
     sessionId: string;
@@ -70,7 +71,7 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
     return (
         <div className="glass-card anim-slide-up" style={{ padding: '1.5rem', marginBottom: '2rem', border: '1px solid var(--color-primary-light)' }}>
             <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>📊</span> Create Live Poll
+                <span style={{ display: 'flex', alignItems: 'center', color: 'var(--color-primary)' }}><FiBarChart2 size={24} /></span> Create Live Poll
             </h3>
 
             <form onSubmit={handleCreatePoll}>
@@ -102,9 +103,9 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveOption(index)}
-                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem' }}
+                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 0.5rem', display: 'flex', alignItems: 'center' }}
                                 >
-                                    ✕
+                                    <FiX size={16} />
                                 </button>
                             )}
                         </div>
@@ -129,7 +130,7 @@ const PollCreator: React.FC<PollCreatorProps> = ({ sessionId, onPollCreated }) =
                     style={{ width: '100%', padding: '0.75rem' }}
                     disabled={loading}
                 >
-                    {loading ? <div className="spinner" style={{ width: '18px', height: '18px' }}></div> : '🚀 Launch Live Poll'}
+                    {loading ? <div className="spinner" style={{ width: '18px', height: '18px' }}></div> : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><FiSend size={18} /> Launch Live Poll</span>}
                 </button>
             </form>
         </div>

@@ -14,6 +14,12 @@ import CelebrationModal from '../components/CelebrationModal';
 import TeacherSessionView from './TeacherSessionView';
 import StudentSessionView from './StudentSessionView';
 import { useTheme } from '../contexts/ThemeContext';
+import { 
+    FiSmartphone, FiDownload, FiFileText, FiDatabase, 
+    FiBarChart2, FiActivity, FiRadio, FiMonitor, 
+    FiPower, FiSun, FiMoon, FiChevronLeft, FiChevronRight, 
+    FiStar, FiCheckCircle, FiAlertTriangle, FiZap, FiX, FiCopy, FiMessageSquare
+} from 'react-icons/fi';
 
 const SessionView: React.FC = () => {
     const { code } = useParams<{ code: string }>();
@@ -43,8 +49,8 @@ const SessionView: React.FC = () => {
     const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
     const [showExportOptions, setShowExportOptions] = useState(false);
 
-    const [showLeftSidebar, setShowLeftSidebar] = useState(false);
-    const [showRightSidebar, setShowRightSidebar] = useState(false);
+    const [showLeftSidebar, setShowLeftSidebar] = useState(window.innerWidth > 768);
+    const [showRightSidebar, setShowRightSidebar] = useState(true);
     const [showQRModal, setShowQRModal] = useState(false);
     const [showEngagement, setShowEngagement] = useState(false);
 
@@ -526,36 +532,48 @@ const SessionView: React.FC = () => {
                 borderBottom: '1px solid rgba(125, 125, 125, 0.2)',
                 padding: '1rem 2rem',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                alignItems: 'stretch',
+                gap: '1rem',
                 position: 'sticky',
                 top: 0,
                 zIndex: 100,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
             }}>
-                <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-primary-light)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                            Live Session
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-primary-light)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                Live Session
+                            </div>
+                            {session.status === 'paused' && (
+                                <span style={{
+                                    background: 'rgba(245, 158, 11, 0.2)',
+                                    color: '#f59e0b',
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    fontSize: '0.7rem',
+                                    fontWeight: '700',
+                                    textTransform: 'uppercase'
+                                }}>
+                                    PAUSED
+                                </span>
+                            )}
                         </div>
-                        {session.status === 'paused' && (
-                            <span style={{
-                                background: 'rgba(245, 158, 11, 0.2)',
-                                color: '#f59e0b',
-                                padding: '0.2rem 0.6rem',
-                                borderRadius: 'var(--radius-sm)',
-                                fontSize: '0.7rem',
-                                fontWeight: '700',
-                                textTransform: 'uppercase'
-                            }}>
-                                PAUSED
-                            </span>
-                        )}
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{session.title}</div>
                     </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{session.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', borderRadius: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
+                        </button>
+                        <button onClick={logout} className="btn btn-primary" style={{ padding: '0.4rem 1.2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FiPower size={16} /> Logout
+                        </button>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
                     <div className="glass-card" style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-md)', margin: 0, border: '1px solid var(--color-primary-light)' }}>
                         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', lineHeight: 1 }}>CODE</span>
                         <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--color-primary-light)' }}>{session.code}</span>
@@ -564,7 +582,7 @@ const SessionView: React.FC = () => {
 
 
                     {user?.role?.toLowerCase() === 'teacher' ? (
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             <button
                                 onClick={() => setShowQRModal(true)}
                                 className="btn btn-secondary"
@@ -575,7 +593,7 @@ const SessionView: React.FC = () => {
                                 }}
                                 title="Show Join Code"
                             >
-                                📱
+                                <FiSmartphone size={18} />
                             </button>
                             <div style={{ position: 'relative' }}>
                                 <button
@@ -587,7 +605,7 @@ const SessionView: React.FC = () => {
                                         gap: '0.4rem'
                                     }}
                                 >
-                                    📄 Export ▾
+                                    <FiDownload size={16} /> Export ▾
                                 </button>
 
                                 {showExportOptions && (
@@ -609,86 +627,91 @@ const SessionView: React.FC = () => {
                                                 handleExportPDF();
                                                 setShowExportOptions(false);
                                             }}
-                                            style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
+                                            style={{ display: 'flex', alignItems: 'center', width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
                                             onMouseOver={(e) => e.currentTarget.style.background = 'rgba(125,125,125,0.1)'}
                                             onMouseOut={(e) => e.currentTarget.style.background = 'none'}
                                         >
-                                            📄 PDF Document
+                                            <FiFileText size={16} style={{ marginRight: '8px' }} /> PDF Document
                                         </button>
                                         <button
                                             onClick={exportToCSV}
-                                            style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
+                                            style={{ display: 'flex', alignItems: 'center', width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
                                             onMouseOver={(e) => e.currentTarget.style.background = 'rgba(125,125,125,0.1)'}
                                             onMouseOut={(e) => e.currentTarget.style.background = 'none'}
                                         >
-                                            📊 CSV Spreadsheet
+                                            <FiDatabase size={16} style={{ marginRight: '8px' }} /> CSV Spreadsheet
                                         </button>
                                     </div>
                                 )}
                             </div>
                             <button
-                                onClick={() => setShowPollCreator(!showPollCreator)}
-                                className="btn btn-secondary"
-                                style={{
-                                    background: showPollCreator ? 'var(--color-primary)' : '',
-                                    color: showPollCreator ? 'white' : ''
-                                }}
-                                title="Manage Polls"
-                            >
-                                📊 Poll
-                            </button>
-                            <button
-                                onClick={handlePauseSession}
-                                className="btn btn-secondary"
-                                style={{
-                                    background: session.status === 'paused' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                    color: session.status === 'paused' ? '#10b981' : '#f59e0b',
-                                    borderColor: session.status === 'paused' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'
-                                }}
-                            >
-                                {session.status === 'paused' ? 'Resume' : 'Pause'}
-                            </button>
-                            <button
-                                onClick={() => setShowEngagement(!showEngagement)}
-                                className="btn btn-secondary"
-                                style={{
-                                    background: showEngagement ? 'var(--color-primary)' : '',
-                                    color: showEngagement ? 'white' : ''
-                                }}
-                                title="View Student Engagement"
-                            >
-                                📊 Engagement
-                            </button>
-                            <button
-                                onClick={triggerPulseCheck}
-                                className="btn btn-secondary"
-                                style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--color-warning)', borderColor: 'rgba(245, 158, 11, 0.2)' }}
-                                title="Check if students are paying attention"
-                            >
-                                🔥 Pulse Check
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowWhiteboard(true);
-                                    socketService.emitWhiteboardOpen(code || '');
-                                }}
-                                className="btn btn-secondary"
-                            >
-                                Open Whiteboard
-                            </button>
-                            <button onClick={handleEndSession} className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-                                End Session
-                            </button>
+                                                onClick={() => setShowPollCreator(!showPollCreator)}
+                                                className="btn btn-secondary"
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                    background: showPollCreator ? 'var(--color-primary)' : '',
+                                                    color: showPollCreator ? 'white' : ''
+                                                }}
+                                                title="Manage Polls"
+                                            >
+                                                <FiBarChart2 size={16} /> Poll
+                                            </button>
+                                            <button
+                                                onClick={handlePauseSession}
+                                                className="btn btn-secondary"
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                    background: session.status === 'paused' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                                    color: session.status === 'paused' ? '#10b981' : '#f59e0b',
+                                                    borderColor: session.status === 'paused' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'
+                                                }}
+                                            >
+                                                {session.status === 'paused' ? 'Resume' : 'Pause'}
+                                            </button>
+                                            <button
+                                                onClick={() => setShowEngagement(!showEngagement)}
+                                                className="btn btn-secondary"
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                    background: showEngagement ? 'var(--color-primary)' : '',
+                                                    color: showEngagement ? 'white' : ''
+                                                }}
+                                                title="View Student Engagement"
+                                            >
+                                                <FiActivity size={16} /> Engagement
+                                            </button>
+                                            <button
+                                                onClick={triggerPulseCheck}
+                                                className="btn btn-secondary"
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(245, 158, 11, 0.1)', color: 'var(--color-warning)', borderColor: 'rgba(245, 158, 11, 0.2)' }}
+                                                title="Check if students are paying attention"
+                                            >
+                                                <FiRadio size={16} /> Pulse Check
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setShowWhiteboard(true);
+                                                    socketService.emitWhiteboardOpen(code || '');
+                                                }}
+                                                className="btn btn-secondary"
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                            >
+                                                <FiMonitor size={16} /> Open Whiteboard
+                                            </button>
+                                            <button onClick={handleEndSession} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                                                <FiPower size={16} /> End Session
+                                            </button>
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             {!showWhiteboard && (
                                 <button
                                     onClick={() => setShowWhiteboard(true)}
                                     className="btn btn-secondary"
                                     title="View teacher's whiteboard"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                                 >
-                                    📋 View Whiteboard
+                                    <FiMonitor size={16} /> View Whiteboard
                                 </button>
                             )}
                             <button onClick={handleLeaveSession} className="btn btn-secondary">
@@ -696,14 +719,6 @@ const SessionView: React.FC = () => {
                             </button>
                         </div>
                     )}
-                    <div style={{ marginLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid rgba(125,125,125,0.2)', paddingLeft: '1.5rem' }}>
-                        <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', borderRadius: '50px' }}>
-                            {theme === 'dark' ? '☀️' : '🌙'}
-                        </button>
-                        <button onClick={logout} className="btn btn-primary" style={{ padding: '0.4rem 1.2rem', fontWeight: 600 }}>
-                            Logout
-                        </button>
-                    </div>
                 </div>
             </nav >
             {error && <div className="container" style={{ marginTop: '1rem' }}><div className="alert alert-error">{error}</div></div>}
@@ -727,7 +742,7 @@ const SessionView: React.FC = () => {
                     justifyContent: 'space-between'
                 }}>
                     <div>
-                        <strong>💓 Pulse Check</strong>
+                        <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><FiRadio size={16} /> Pulse Check</strong>
                         <div style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}>
                             {pulseCheckResults.respondedCount} of {session?.students.length || 0} responded
                         </div>
@@ -767,8 +782,8 @@ const SessionView: React.FC = () => {
                 }}>
                     <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--color-primary-light)' }}>Questions ({questions.length})</h3>
-                        <button onClick={() => setShowLeftSidebar(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                            ◀️
+                        <button onClick={() => setShowLeftSidebar(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                            <FiChevronLeft size={20} />
                         </button>
                     </div>
 
@@ -798,8 +813,8 @@ const SessionView: React.FC = () => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{q.user?.name}</span>
                                         <div style={{ display: 'flex', gap: '4px' }}>
-                                            {q.isPinned && <span style={{ fontSize: '0.8rem' }}>📌</span>}
-                                            {q.teacherAnswer && <span style={{ fontSize: '0.8rem' }}>✅</span>}
+                                            {q.isPinned && <span style={{ color: 'var(--color-primary-light)' }}><FiStar size={14} /></span>}
+                                            {q.teacherAnswer && <span style={{ color: 'var(--color-success)' }}><FiCheckCircle size={14} /></span>}
                                         </div>
                                     </div>
                                 </div>
@@ -819,23 +834,26 @@ const SessionView: React.FC = () => {
                     padding: '2rem'
                 }}>
                     {!showLeftSidebar && (
-                        <button
-                            onClick={() => setShowLeftSidebar(true)}
-                            style={{
-                                position: 'absolute',
-                                top: '1rem',
-                                left: '1rem',
-                                zIndex: 10,
-                                background: 'var(--color-surface)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                padding: '0.5rem',
-                                borderRadius: 'var(--radius-sm)',
-                                cursor: 'pointer',
-                                color: 'var(--color-text-secondary)'
-                            }}
-                        >
-                            ▶️ Show Questions
-                        </button>
+                            <button
+                                onClick={() => setShowLeftSidebar(true)}
+                                style={{
+                                    position: 'absolute',
+                                    top: '1rem',
+                                    left: '1rem',
+                                    zIndex: 10,
+                                    background: 'var(--color-surface)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    padding: '0.5rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    cursor: 'pointer',
+                                    color: 'var(--color-text-secondary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem'
+                                }}
+                            >
+                                <FiChevronRight size={18} /> Show Questions
+                            </button>
                     )}
 
                     {!showRightSidebar && (
@@ -851,10 +869,13 @@ const SessionView: React.FC = () => {
                                 padding: '0.5rem',
                                 borderRadius: 'var(--radius-sm)',
                                 cursor: 'pointer',
-                                color: 'var(--color-text-secondary)'
+                                color: 'var(--color-text-secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem'
                             }}
                         >
-                            Show Info ◀️
+                            Show Info <FiChevronLeft size={18} />
                         </button>
                     )}
 
@@ -981,8 +1002,8 @@ const SessionView: React.FC = () => {
                     flexDirection: 'column'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-                        <button onClick={() => setShowRightSidebar(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                            ▶️
+                        <button onClick={() => setShowRightSidebar(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                            <FiChevronRight size={20} />
                         </button>
                     </div>
 
@@ -1063,7 +1084,7 @@ const SessionView: React.FC = () => {
                                                         }}
                                                         title="Message participant"
                                                     >
-                                                        💬
+                                                        <FiMessageSquare size={16} />
                                                     </button>
                                                 )}
                                             </li>
@@ -1103,7 +1124,7 @@ const SessionView: React.FC = () => {
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                         }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+                            <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--color-warning)', marginBottom: '1rem' }}><FiAlertTriangle size={48} /></div>
                             <h3 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>End Session?</h3>
                             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem', lineHeight: '1.5' }}>
                                 This will stop all submissions and generate a final report. This action cannot be undone.
@@ -1165,7 +1186,7 @@ const SessionView: React.FC = () => {
                             position: 'relative',
                             overflow: 'hidden'
                         }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚡</div>
+                            <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--color-warning)', marginBottom: '1rem' }}><FiZap size={48} /></div>
                             <h2 style={{ marginBottom: '0.5rem', color: 'var(--color-warning)' }}>WAKE UP!</h2>
                             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
                                 Click now for **+15 Points**!
@@ -1189,7 +1210,7 @@ const SessionView: React.FC = () => {
                                     transition: 'all 0.3s ease'
                                 }}
                             >
-                                {pulseCheckClicked ? 'CLAIMED! ✅' : 'I AM HERE!'}
+                                {pulseCheckClicked ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>CLAIMED! <FiCheckCircle size={20} /></span> : 'I AM HERE!'}
                             </button>
 
                             <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
@@ -1262,7 +1283,7 @@ const SessionView: React.FC = () => {
                             onClick={() => setShowQRModal(false)}
                             style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: 'white', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
                         >
-                            ✕
+                            <FiX size={16} />
                         </button>
 
                         <h2 style={{ fontSize: '1.5rem', marginBottom: '0.2rem', fontWeight: '700' }}>Join Session</h2>
@@ -1290,9 +1311,9 @@ const SessionView: React.FC = () => {
                                         // Optional: Show toast
                                     }}
                                     title="Copy Link"
-                                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '0.2rem 0.5rem', color: 'white', fontSize: '0.9rem' }}
+                                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '0.4rem 0.5rem', display: 'flex', alignItems: 'center', color: 'white' }}
                                 >
-                                    📋
+                                    <FiCopy size={16} />
                                 </button>
                             </div>
                         </div>

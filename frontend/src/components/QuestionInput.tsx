@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { questionService } from '../services/questionService';
+import { FiMic, FiStopCircle } from 'react-icons/fi';
 
 interface QuestionInputProps {
     sessionId: string;
@@ -138,7 +139,7 @@ const QuestionInput: React.FC<QuestionInputProps> = ({ sessionId, sessionStatus,
                             title="Voice Input"
                             disabled={loading}
                         >
-                            {isListening ? '🛑' : '🎤'}
+                            {isListening ? <FiStopCircle size={20} /> : <FiMic size={20} />}
                         </button>
                     )}
                 </div>

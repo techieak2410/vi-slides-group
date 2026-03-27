@@ -1,6 +1,7 @@
 import React from 'react';
 import PollCreator from '../components/PollCreator';
 import EngagementTeacherView from '../components/EngagementTeacherView';
+import { FiX } from 'react-icons/fi';
 
 interface TeacherSessionViewProps {
     session: any;
@@ -78,7 +79,7 @@ const TeacherSessionView: React.FC<TeacherSessionViewProps> = ({
                             }}
                             title="Close"
                         >
-                            ×
+                            <FiX size={16} />
                         </button>
                         <EngagementTeacherView />
                     </div>
