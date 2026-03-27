@@ -10,7 +10,9 @@ import {
     leaveSession,
     getStudentSessions,
     getOrCreateQuerySession,
-    updateQueryUrl
+    updateQueryUrl,
+    exportSessionPDF,
+    exportSessionCSV
 } from '../controllers/sessionController';
 import { protect, authorize } from '../middleware/auth';
 
@@ -75,4 +77,13 @@ router.patch('/:id/pause', authorize('Teacher'), pauseSession);
 router.post('/:code/leave', leaveSession);
 
 router.get('/teacher/history', authorize('Teacher'), getTeacherSessions);
+
+// @route   GET /api/sessions/:id/export/pdf
+// @desc    Export session to PDF
+router.get('/:id/export/pdf', authorize('Teacher'), exportSessionPDF);
+
+// @route   GET /api/sessions/:id/export/csv
+// @desc    Export session to CSV
+router.get('/:id/export/csv', authorize('Teacher'), exportSessionCSV);
+
 export default router;

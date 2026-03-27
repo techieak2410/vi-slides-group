@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import Session from '../models/Session';
 import Question from '../models/Question';
+import Poll from '../models/Poll';
 import { emitToSession } from '../config/socket';
 import { generateMoodSummary } from '../services/aiService';
 import QRCode from 'qrcode';
+import { mdToPdf } from 'md-to-pdf';
+import { Parser } from 'json2csv';
 import os from 'os';
 
 const getLocalUrl = (): string => {
@@ -517,5 +520,150 @@ export const updateQueryUrl = async (req: Request, res: Response): Promise<void>
             success: false,
             message: 'Server error updating query URL'
         });
+    }
+};
+
+// @desc    Export session data to PDF
+// @route   GET /api/sessions/:id/export/pdf
+// @access  Private (Teacher only)
+export const exportSessionPDF = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const session = await Session.findById(id).populate('teacher', 'name email');
+        
+        if (!session) {
+            res.status(404).json({ success: false, message: 'Session not found' });
+            return;
+        }
+
+        // Security check
+        if (session.teacher._id.toString() !== req.user?._id.toString()) {
+            res.status(403).json({ success: false, message: 'Unauthorized to export this session' });
+            return;
+        }
+
+        const questions = await Question.find({ session: id }).populate('user', 'name');
+        const polls = await Poll.find({ session: id });
+
+        // Build Markdown string
+        let md = `# Session Report: ${session.title}\n\n`;
+        md += `**Date:** ${new Date(session.createdAt).toLocaleDateString()}  \n`;
+        md += `**Teacher:** ${(session.teacher as any)?.name || 'Unknown'}  \n`;
+        md += `**Session Code:** ${session.code}  \n\n`;
+        md += `---\n\n`;
+
+        if (session.moodSummary) {
+            md += `## 🤖 AI Class Summary\n`;
+            md += `${session.moodSummary}\n\n`;
+            md += `---\n\n`;
+        }
+
+        md += `## ❓ Questions (${questions.length})\n\n`;
+        questions.forEach((q: any, i) => {
+            md += `### ${i + 1}. ${q.content}\n`;
+            md += `- **Asked by:** ${q.user?.name || 'Anonymous'}\n`;
+            md += `- **Upvotes:** ${q.upvotes}\n`;
+            if (q.teacherAnswer) {
+                md += `- **Teacher Answer:** ${q.teacherAnswer}\n`;
+            }
+            if (q.aiAnswer && q.aiAnswer.content) {
+                md += `- **AI Suggested Answer:** ${q.aiAnswer.content}\n`;
+            }
+            md += '\n';
+        });
+
+        md += `---\n\n`;
+        md += `## 📊 Polls (${polls.length})\n\n`;
+        polls.forEach((p: any, i) => {
+            md += `### ${i + 1}. ${p.question}\n`;
+            p.options.forEach((opt: any) => {
+                md += `- **${opt.text}**: ${opt.votes} votes\n`;
+            });
+            md += '\n';
+        });
+
+        // Convert MD to PDF Buffer
+        const pdf = await mdToPdf({ content: md }).catch(e => {
+            console.error('md-to-pdf error:', e);
+            throw new Error('PDF Engine Failure');
+        });
+
+        if (!pdf || !pdf.content) {
+            throw new Error('PDF Generation Failed');
+        }
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Session-${session.code}-Export.pdf"`);
+        res.end(pdf.content);
+
+    } catch (error) {
+        console.error('PDF Export Error:', error);
+        res.status(500).json({ success: false, message: 'Error generating PDF export' });
+    }
+};
+
+// @desc    Export session data to CSV
+// @route   GET /api/sessions/:id/export/csv
+// @access  Private (Teacher only)
+export const exportSessionCSV = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const session = await Session.findById(id);
+        
+        if (!session) {
+            res.status(404).json({ success: false, message: 'Session not found' });
+            return;
+        }
+
+        if (session.teacher.toString() !== req.user?._id.toString()) {
+            res.status(403).json({ success: false, message: 'Unauthorized to export this session' });
+            return;
+        }
+
+        const questions = await Question.find({ session: id }).populate('user', 'name');
+        
+        // Flatten Data
+        const data: any[] = questions.map((q: any) => ({
+            Type: 'Question',
+            Content: q.content,
+            User: q.user?.name || 'Anonymous',
+            Upvotes: q.upvotes,
+            TeacherAnswer: q.teacherAnswer || '',
+            AIAnswer: q.aiAnswer?.content || '',
+            CreatedAt: new Date(q.createdAt).toLocaleString()
+        }));
+
+        const polls = await Poll.find({ session: id });
+        polls.forEach((p: any) => {
+            p.options.forEach((opt: any) => {
+                data.push({
+                    Type: 'Poll Option',
+                    Content: p.question,
+                    User: 'N/A',
+                    Upvotes: opt.votes,
+                    TeacherAnswer: opt.text, // Mapped to TeacherAnswer column for tabular alignment
+                    AIAnswer: '',
+                    CreatedAt: new Date(p.createdAt).toLocaleString()
+                });
+            });
+        });
+
+        if (data.length === 0) {
+            data.push({
+                Type: 'Info',
+                Content: 'No questions or polls found in this session.',
+                User: '', Upvotes: 0, TeacherAnswer: '', AIAnswer: '', CreatedAt: ''
+            });
+        }
+
+        const parser = new Parser();
+        const csv = parser.parse(data);
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="Session-${session.code}-Export.csv"`);
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV Export Error:', error);
+        res.status(500).json({ success: false, message: 'Error generating CSV export' });
     }
 };

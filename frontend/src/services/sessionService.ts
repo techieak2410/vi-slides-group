@@ -101,6 +101,16 @@ export const sessionService = {
     updateQueryUrl: async (url: string): Promise<{ success: boolean; data: Session }> => {
         const response = await api.patch('/sessions/query-mode/url', { url });
         return response.data;
+    },
+
+    exportSessionPDF: async (id: string): Promise<Blob> => {
+        const response = await api.get(`/sessions/${id}/export/pdf`, { responseType: 'blob' });
+        return new Blob([response.data], { type: 'application/pdf' });
+    },
+
+    exportSessionCSV: async (id: string): Promise<Blob> => {
+        const response = await api.get(`/sessions/${id}/export/csv`, { responseType: 'blob' });
+        return new Blob([response.data], { type: 'text/csv' });
     }
 };
 
