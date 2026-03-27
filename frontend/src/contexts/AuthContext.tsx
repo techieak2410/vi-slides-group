@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, User, RegisterData, LoginData } from '../services/authService';
 
+// 1. Define the Context Interface with correct Return Types
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (data: LoginData) => Promise<void>;
-    register: (data: RegisterData) => Promise<void>;
+    login: (data: LoginData) => Promise<User>;    // Returns User object
+    register: (data: RegisterData) => Promise<User>; // Returns User object
     logout: () => void;
     updateUser: (user: User) => void;
     isAuthenticated: boolean;
@@ -13,6 +14,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// 2. Custom Hook for easy access
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -29,7 +31,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Check if user is logged in on mount
+    // 3. Persistent Session Check
     useEffect(() => {
         const initAuth = async () => {
             const token = sessionStorage.getItem('token');
@@ -37,13 +39,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             if (token && storedUser) {
                 try {
-                    // Verify token is still valid
+                    // Verify session with backend
                     const response = await authService.getCurrentUser();
                     setUser(response.user);
                 } catch (error) {
-                    // Token invalid, clear storage
-                    sessionStorage.removeItem('token');
-                    sessionStorage.removeItem('user');
+                    // Force logout on invalid/expired token
+                    sessionStorage.clear();
+                    setUser(null);
                 }
             }
             setLoading(false);
@@ -52,24 +54,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         initAuth();
     }, []);
 
-    const login = async (data: LoginData) => {
+    // 4. Enhanced Login Logic
+    const login = async (data: LoginData): Promise<User> => {
         const response = await authService.login(data);
+        
         sessionStorage.setItem('token', response.token);
         sessionStorage.setItem('user', JSON.stringify(response.user));
         setUser(response.user);
+
+        // Hand the user back to Login.tsx for immediate role-checking
+        return response.user; 
     };
 
-    const register = async (data: RegisterData) => {
+    // 5. Enhanced Registration Logic
+    const register = async (data: RegisterData): Promise<User> => {
         const response = await authService.register(data);
+        
         sessionStorage.setItem('token', response.token);
         sessionStorage.setItem('user', JSON.stringify(response.user));
         setUser(response.user);
+
+        // Hand the user back to Register.tsx for immediate role-checking
+        return response.user;
     };
 
     const logout = () => {
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
+        sessionStorage.clear();
         setUser(null);
+        window.location.href = '/login';
     };
 
     const updateUser = (updatedUser: User) => {
@@ -77,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(updatedUser);
     };
 
+    // 6. Provide the values
     const value: AuthContextType = {
         user,
         loading,
@@ -87,5 +100,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated: !!user
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>
+            {!loading && children}
+        </AuthContext.Provider>
+    );
 };

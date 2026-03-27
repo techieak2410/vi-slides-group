@@ -40,6 +40,7 @@ const BrainIcon = () => (
     </svg>
 );
 
+
 const Register: React.FC = () => {
     const navigate = useNavigate();
     const { register } = useAuth();
@@ -58,6 +59,15 @@ const Register: React.FC = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [pendingGoogleToken, setPendingGoogleToken] = useState<string | null>(null);
 
+    // CENTRAL REDIRECTION LOGIC
+    const handleRoleBasedRedirect = (role: string) => {
+        if (role === 'Teacher') {
+            navigate('/teacher-dashboard');
+        } else {
+            navigate('/student-dashboard');
+        }
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         setError('');
@@ -67,30 +77,39 @@ const Register: React.FC = () => {
         setFormData({ ...formData, role });
 
     const validatePassword = (password: string) => {
-        if (password.length < 8) return 'Password must be at least 8 characters long';
-        if (!/[A-Z]/.test(password)) return 'Password must contain an uppercase letter';
-        if (!/[a-z]/.test(password)) return 'Password must contain a lowercase letter';
-        if (!/[0-9]/.test(password)) return 'Password must contain a number';
-        if (!/[!@#$%^&*]/.test(password)) return 'Password must contain a special character';
+        if (password.length < 8) return 'Protocol error: Minimum 8 characters required';
+        if (!/[A-Z]/.test(password)) return 'Protocol error: Uppercase character required';
+        if (!/[a-z]/.test(password)) return 'Protocol error: Lowercase character required';
+        if (!/[0-9]/.test(password)) return 'Protocol error: Numeric character required';
+        if (!/[!@#$%^&*]/.test(password)) return 'Protocol error: Special character required';
         return null;
     };
 
+    // NORMAL EMAIL SIGNUP HANDLER
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        
         if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
+            setError('Input mismatch: Passwords do not correlate');
             return;
         }
+
         const passwordError = validatePassword(formData.password);
         if (passwordError) { setError(passwordError); return; }
+
         setLoading(true);
         try {
             const { confirmPassword, ...registerData } = formData;
-            await register(registerData);
-            navigate('/dashboard');
+            
+            // 1. Execute registration through AuthContext
+            const user = await register(registerData);
+            
+            // 2. Redirect based on the role stored in the returned user object
+            handleRoleBasedRedirect(user.role);
+            
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            setError(err.response?.data?.message || 'Initialization failed. System node error.');
             setLoading(false);
         }
     };
@@ -100,6 +119,7 @@ const Register: React.FC = () => {
         setError('');
     };
 
+    // GOOGLE ROLE SELECTION HANDLER
     const completeGoogleSignup = async (selectedRole: string) => {
         if (!pendingGoogleToken) return;
         setLoading(true);
@@ -108,10 +128,12 @@ const Register: React.FC = () => {
             if (res.success) {
                 sessionStorage.setItem('token', res.token);
                 sessionStorage.setItem('user', JSON.stringify(res.user));
-                window.location.href = '/dashboard';
+                
+                // Redirect based on the role assigned during Google signup
+                handleRoleBasedRedirect(res.user.role);
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Google signup failed');
+            setError(err.response?.data?.message || 'Google node integration failed');
             setPendingGoogleToken(null);
             setLoading(false);
         }
@@ -119,126 +141,57 @@ const Register: React.FC = () => {
 
     const passwordChecks = [
         { label: '8+ chars',  met: formData.password.length >= 8 },
-        { label: 'Uppercase', met: /[A-Z]/.test(formData.password) },
-        { label: 'Lowercase', met: /[a-z]/.test(formData.password) },
+        { label: 'Upper',     met: /[A-Z]/.test(formData.password) },
+        { label: 'Lower',     met: /[a-z]/.test(formData.password) },
         { label: 'Number',    met: /[0-9]/.test(formData.password) },
         { label: 'Special',   met: /[!@#$%^&*]/.test(formData.password) },
     ];
 
-    // ── Google role-selection screen ──────────────────────────────────
+    // ── Google Role Selection UI (Keep your logic, updated text) ──
     if (pendingGoogleToken) {
         return (
             <div className="nexus-layout">
                 <div className="ambient-orb orb-cyan" />
                 <div className="ambient-orb orb-indigo" />
                 <div className="ambient-grid" />
-
                 <div className="glass-container glass-container--centered fade-in">
                     <div className="role-select-panel">
-                        <div className="logo-badge">
-                            <BrainIcon />
-                            <span>Vi-SlideS AI</span>
-                        </div>
-
-                        <h2 className="role-select-title">
-                            One last <em>step.</em>
-                        </h2>
-                        <p className="role-select-sub">
-                            How will you be using Vi-SlideS?
-                        </p>
-
-                        {error && (
-                            <div className="alert-box" role="alert">
-                                <AlertIcon />
-                                <span>{error}</span>
-                            </div>
-                        )}
-
+                        <div className="logo-badge"><BrainIcon /><span>Vi-SlideS Unified</span></div>
+                        <h2 className="role-select-title">Finalizing <em>Node.</em></h2>
+                        <p className="role-select-sub">Select your operational identity</p>
                         <div className="role-cards-container">
-                            <button
-                                onClick={() => completeGoogleSignup('Student')}
-                                className="role-card"
-                                disabled={loading}
-                            >
-                                <span className="role-icon" aria-hidden="true">🎓</span>
-                                <h3>Student</h3>
-                                <p>Ask questions and learn dynamically</p>
+                            <button onClick={() => completeGoogleSignup('Student')} className="role-card" disabled={loading}>
+                                <span className="role-icon">🎓</span>
+                                <h3>Student Participant</h3>
+                                <p>Ask questions and access lecture streams</p>
                             </button>
-                            <button
-                                onClick={() => completeGoogleSignup('Teacher')}
-                                className="role-card"
-                                disabled={loading}
-                            >
-                                <span className="role-icon" aria-hidden="true">👨‍🏫</span>
-                                <h3>Teacher</h3>
-                                <p>Get AI insights and guide the class</p>
+                            <button onClick={() => completeGoogleSignup('Teacher')} className="role-card" disabled={loading}>
+                                <span className="role-icon">👨‍🏫</span>
+                                <h3>Faculty Instructor</h3>
+                                <p>Manage AI triage and class analytics</p>
                             </button>
                         </div>
-
-                        {loading && (
-                            <div className="loading-row">
-                                <span className="spinner-mini" aria-hidden="true" />
-                                <span>Finalizing your account…</span>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
         );
     }
 
-    // ── Main register screen ──────────────────────────────────────────
     return (
         <div className="nexus-layout">
             <div className="ambient-orb orb-cyan" />
             <div className="ambient-orb orb-indigo" />
             <div className="ambient-grid" />
-
             <div className="glass-container fade-in">
-
                 {/* ── Left Panel ── */}
                 <div className="glass-showcase">
                     <div className="showcase-inner">
-                        <div className="logo-badge">
-                            <BrainIcon />
-                            <span>Vi-SlideS AI</span>
-                        </div>
-
-                        <h2 className="showcase-big-text">
-                            Join the<br />
-                            <em>revolution.</em>
-                        </h2>
-
-                        <p className="showcase-tagline">
-                            Adaptive learning powered<br />by real cognitive insight
-                        </p>
-
-                        <div className="feature-list">
-                            {[
-                                'AI-powered question analysis',
-                                'Real-time classroom feedback',
-                                'Adaptive slide generation',
-                            ].map((f) => (
-                                <div className="feature-item" key={f}>
-                                    <span className="feature-dot" />
-                                    <span>{f}</span>
-                                </div>
-                            ))}
-                        </div>
-
+                        <div className="logo-badge"><BrainIcon /><span>Vi-SlideS Unified</span></div>
+                        <h2 className="showcase-big-text uppercase tracking-tighter">Establish<br /><em>Presence.</em></h2>
+                        <p className="showcase-tagline">Initialize your profile within the<br />unified learning node</p>
                         <div className="stat-strip">
-                            <div className="stat-item">
-                                <span className="stat-value">12k+</span>
-                                <span className="stat-label">Educators</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-value">98%</span>
-                                <span className="stat-label">Accuracy</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-value">4.9★</span>
-                                <span className="stat-label">Rating</span>
-                            </div>
+                            <div className="stat-item"><span className="stat-value">Uptime</span><span className="stat-label">99.9%</span></div>
+                            <div className="stat-item"><span className="stat-value">Node</span><span className="stat-label">Vi-v4</span></div>
                         </div>
                     </div>
                 </div>
@@ -246,8 +199,8 @@ const Register: React.FC = () => {
                 {/* ── Right Panel ── */}
                 <div className="glass-form-area glass-form-area--register">
                     <div className="form-header">
-                        <h1>Create account</h1>
-                        <p>Sign up to get started</p>
+                        <h1>Create Profile</h1>
+                        <p>Synchronize your identity with the system</p>
                     </div>
 
                     {error && (
@@ -257,26 +210,19 @@ const Register: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Google first */}
                     <div className="google-btn-wrapper">
                         <GoogleLogin
                             onSuccess={handleGoogleSuccess}
-                            onError={() => setError('Google authentication failed.')}
+                            onError={() => setError('Google verification failed.')}
                             theme="filled_black"
-                            size="large"
-                            shape="rectangular"
+                            shape="pill"
                             width="100%"
-                            text="signup_with"
                         />
                     </div>
 
-                    <div className="nexus-divider">
-                        <span>or register with email</span>
-                    </div>
+                    <div className="nexus-divider"><span>or use credentials</span></div>
 
                     <form onSubmit={handleSubmit} className="nexus-form" noValidate>
-
-                        {/* Role toggle */}
                         <div className="role-toggle-wrapper">
                             <button
                                 type="button"
@@ -295,101 +241,49 @@ const Register: React.FC = () => {
                         </div>
 
                         <div className="input-group">
-                            <label htmlFor="name">Full name</label>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                placeholder="Jane Smith"
-                                value={formData.name}
-                                onChange={handleChange}
-                                autoComplete="name"
-                                required
-                            />
+                            <label htmlFor="name">Full Identity</label>
+                            <input type="text" id="name" name="name" placeholder="Full name identifier" value={formData.name} onChange={handleChange} required />
                         </div>
 
                         <div className="input-group">
-                            <label htmlFor="reg-email">Email address</label>
-                            <input
-                                type="email"
-                                id="reg-email"
-                                name="email"
-                                placeholder="name@institution.edu"
-                                value={formData.email}
-                                onChange={handleChange}
-                                autoComplete="email"
-                                required
-                            />
+                            <label htmlFor="reg-email">Identity Endpoint</label>
+                            <input type="email" id="reg-email" name="email" placeholder="institution@email.edu" value={formData.email} onChange={handleChange} required />
                         </div>
 
                         <div className="input-group">
-                            <label htmlFor="reg-password">Password</label>
+                            <label htmlFor="reg-password">Access Key</label>
                             <div className="password-wrapper">
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    id="reg-password"
-                                    name="password"
-                                    placeholder="Create a strong password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    autoComplete="new-password"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    className="eye-btn"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                >
+                                <input type={showPassword ? 'text' : 'password'} id="reg-password" name="password" placeholder="Create complex key" value={formData.password} onChange={handleChange} required />
+                                <button type="button" className="eye-btn" onClick={() => setShowPassword(!showPassword)}>
                                     {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                                 </button>
                             </div>
                             <div className="password-requirements-dark">
                                 {passwordChecks.map((req) => (
-                                    <span key={req.label} className={`req-badge ${req.met ? 'met' : ''}`}>
-                                        {req.label}
-                                    </span>
+                                    <span key={req.label} className={`req-badge ${req.met ? 'met' : ''}`}>{req.label}</span>
                                 ))}
                             </div>
                         </div>
 
                         <div className="input-group">
-                            <label htmlFor="confirmPassword">Confirm password</label>
+                            <label htmlFor="confirmPassword">Verify Access Key</label>
                             <div className="password-wrapper">
-                                <input
-                                    type={showConfirmPassword ? 'text' : 'password'}
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    placeholder="Re-enter your password"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    autoComplete="new-password"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    className="eye-btn"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                                >
+                                <input type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" name="confirmPassword" placeholder="Confirm access key" value={formData.confirmPassword} onChange={handleChange} required />
+                                <button type="button" className="eye-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                                     {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
                                 </button>
                             </div>
                         </div>
 
-                        <button type="submit" className="neon-btn" disabled={loading}>
-                            {loading
-                                ? <span className="spinner-mini" aria-hidden="true" />
-                                : 'Create Account'}
+                        <button type="submit" className="neon-btn font-black uppercase tracking-widest text-[11px]" disabled={loading}>
+                            {loading ? <span className="spinner-mini" /> : 'Initialise Integration'}
                         </button>
                     </form>
 
                     <p className="bottom-text">
-                        Already have an account?{' '}
-                        <Link to="/login">Sign in</Link>
+                        Already Synchronized? <Link to="/login" style={{color: 'white', fontWeight: 'bold'}}>Access Portal</Link>
                     </p>
                 </div>
-
             </div>
         </div>
     );
