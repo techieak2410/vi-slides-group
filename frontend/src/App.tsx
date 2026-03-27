@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
 import SessionView from './pages/SessionView';
 import SessionSummary from './pages/SessionSummary';
 import Assignments from './pages/Assignments';
@@ -15,76 +14,36 @@ import QueryAsk from './pages/QueryAsk';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import StudentDashboard from './pages/student/StudentDashboard';
 import TestComponent from './components/TestComponent';
+import RootRedirect from './components/RootRedirect';
+
 const App: React.FC = () => {
     return (
         <AuthProvider>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <Routes>
-                    <Route path='/test' element={<TestComponent/>}/>
+                    {/* Public / Auth Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-                    {/* Public route for guest join and query ask */}
                     <Route path="/join/:code" element={<GuestJoinForm />} />
                     <Route path="/ask/:code" element={<QueryAsk />} />
-                    <Route
-                        path="/teacher-dashboard"
-                        element={
-                            <ProtectedRoute>
-                                <TeacherDashboard/>
-                            </ProtectedRoute>
-                        }
-                    />
+                    <Route path="/test" element={<TestComponent />} />
 
-                    <Route
-                    path='/student-dashboard'
+                    {/* Teacher Protected Routes */}
+                    <Route path="/teacher-dashboard" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
+                    <Route path="/query-mode" element={<ProtectedRoute><QueryPPTView /></ProtectedRoute>} />
 
-                    element={
-                        <ProtectedRoute>
-                            <StudentDashboard/>
-                        </ProtectedRoute>
-                    }
-                    />
-                    <Route
-                        path="/session/:code"
-                        element={
-                            <ProtectedRoute>
-                                <SessionView />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/session/:code/summary"
-                        element={
-                            <ProtectedRoute>
-                                <SessionSummary />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/assignments"
-                        element={
-                            <ProtectedRoute>
-                                <Assignments />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/assignments/:id"
-                        element={
-                            <ProtectedRoute>
-                                <AssignmentDetails />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/query-mode"
-                        element={
-                            <ProtectedRoute>
-                                <QueryPPTView />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    {/* Student Protected Routes */}
+                    <Route path="/student-dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+
+                    {/* Shared Protected Routes */}
+                    <Route path="/session/:code" element={<ProtectedRoute><SessionView /></ProtectedRoute>} />
+                    <Route path="/session/:code/summary" element={<ProtectedRoute><SessionSummary /></ProtectedRoute>} />
+                    <Route path="/assignments" element={<ProtectedRoute><Assignments /></ProtectedRoute>} />
+                    <Route path="/assignments/:id" element={<ProtectedRoute><AssignmentDetails /></ProtectedRoute>} />
+
+                    {/* Root & Catch-all */}
+                    <Route path="/" element={<RootRedirect />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Router>
         </AuthProvider>
