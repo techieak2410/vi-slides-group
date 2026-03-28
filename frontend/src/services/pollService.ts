@@ -14,6 +14,7 @@ export interface Poll {
     timerEnabled: boolean;
     timerDuration: number;
     timerStartedAt?: string;
+    correctOptionIndex?: number | null;
     createdAt: string;
 }
 

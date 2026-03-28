@@ -4,20 +4,21 @@ import { useAuth } from '../contexts/AuthContext';
 import { sessionService, Session } from '../services/sessionService';
 import { questionService, Question } from '../services/questionService';
 import { socketService } from '../services/socketService';
-import QuestionCard from '../components/QuestionCard';import PollCard from '../components/PollCard';
+import QuestionCard from '../components/QuestionCard'; import PollCard from '../components/PollCard';
 import { pollService, Poll } from '../services/pollService';
 import Toast from '../components/Toast';
 import Whiteboard from '../components/Whiteboard';
 import Leaderboard from '../components/Leaderboard';
 import PrivateChat from '../components/PrivateChat';
 import CelebrationModal from '../components/CelebrationModal';
+import EngagementTeacherView from '../components/EngagementTeacherView';
 import TeacherSessionView from './TeacherSessionView';
 import StudentSessionView from './StudentSessionView';
 import { useTheme } from '../contexts/ThemeContext';
-import { 
-    FiSmartphone, FiDownload, FiFileText, FiDatabase, 
-    FiBarChart2, FiActivity, FiRadio, FiMonitor, 
-    FiPower, FiSun, FiMoon, FiChevronLeft, FiChevronRight, 
+import {
+    FiSmartphone, FiDownload, FiFileText, FiDatabase,
+    FiBarChart2, FiActivity, FiRadio, FiMonitor,
+    FiPower, FiSun, FiMoon, FiChevronLeft, FiChevronRight,
     FiStar, FiCheckCircle, FiAlertTriangle, FiZap, FiX, FiCopy, FiMessageSquare
 } from 'react-icons/fi';
 
@@ -53,6 +54,7 @@ const SessionView: React.FC = () => {
     const [showRightSidebar, setShowRightSidebar] = useState(true);
     const [showQRModal, setShowQRModal] = useState(false);
     const [showEngagement, setShowEngagement] = useState(false);
+    const [handRaisedCount, setHandRaisedCount] = useState(0);
 
     const isTeacher = user?.role?.toLowerCase() === 'teacher';
 
@@ -269,9 +271,12 @@ const SessionView: React.FC = () => {
                             type: 'success'
                         });
 
-                        if (activePoll && activePoll._id === data.pollId) {
-                            setActivePoll(prev => prev ? { ...prev, isActive: false, correctOptionIndex: data.winningOptionIndex } : prev);
-                        }
+                        setActivePoll(prev => {
+                            if (prev && prev._id === data.pollId) {
+                                return { ...prev, isActive: false, correctOptionIndex: data.winningOptionIndex };
+                            }
+                            return prev;
+                        });
                     });
                 }
             } catch (err: any) {
@@ -372,7 +377,7 @@ const SessionView: React.FC = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
+
             setToast({ message: 'PDF Exported Successfully!', type: 'success' });
         } catch (err) {
             console.error('PDF Export Error:', err);
@@ -437,7 +442,7 @@ const SessionView: React.FC = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
+
             setToast({ message: 'CSV Exported Successfully!', type: 'success' });
         } catch (err) {
             console.error('CSV Export Error:', err);
@@ -590,62 +595,73 @@ const SessionView: React.FC = () => {
                                 )}
                             </div>
                             <button
-                                                onClick={() => setShowPollCreator(!showPollCreator)}
-                                                className="btn btn-secondary"
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                                    background: showPollCreator ? 'var(--color-primary)' : '',
-                                                    color: showPollCreator ? 'white' : ''
-                                                }}
-                                                title="Manage Polls"
-                                            >
-                                                <FiBarChart2 size={16} /> Poll
-                                            </button>
-                                            <button
-                                                onClick={handlePauseSession}
-                                                className="btn btn-secondary"
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                                    background: session.status === 'paused' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                                    color: session.status === 'paused' ? '#10b981' : '#f59e0b',
-                                                    borderColor: session.status === 'paused' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'
-                                                }}
-                                            >
-                                                {session.status === 'paused' ? 'Resume' : 'Pause'}
-                                            </button>
-                                            <button
-                                                onClick={() => setShowEngagement(!showEngagement)}
-                                                className="btn btn-secondary"
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                                    background: showEngagement ? 'var(--color-primary)' : '',
-                                                    color: showEngagement ? 'white' : ''
-                                                }}
-                                                title="View Student Engagement"
-                                            >
-                                                <FiActivity size={16} /> Engagement
-                                            </button>
-                                            <button
-                                                onClick={triggerPulseCheck}
-                                                className="btn btn-secondary"
-                                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(245, 158, 11, 0.1)', color: 'var(--color-warning)', borderColor: 'rgba(245, 158, 11, 0.2)' }}
-                                                title="Check if students are paying attention"
-                                            >
-                                                <FiRadio size={16} /> Pulse Check
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setShowWhiteboard(true);
-                                                    socketService.emitWhiteboardOpen(code || '');
-                                                }}
-                                                className="btn btn-secondary"
-                                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                            >
-                                                <FiMonitor size={16} /> Open Whiteboard
-                                            </button>
-                                            <button onClick={handleEndSession} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-                                                <FiPower size={16} /> End Session
-                                            </button>
+                                onClick={() => setShowPollCreator(!showPollCreator)}
+                                className="btn btn-secondary"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                    background: showPollCreator ? 'var(--color-primary)' : '',
+                                    color: showPollCreator ? 'white' : ''
+                                }}
+                                title="Manage Polls"
+                            >
+                                <FiBarChart2 size={16} /> Poll
+                            </button>
+                            <button
+                                onClick={handlePauseSession}
+                                className="btn btn-secondary"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                    background: session.status === 'paused' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                    color: session.status === 'paused' ? '#10b981' : '#f59e0b',
+                                    borderColor: session.status === 'paused' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'
+                                }}
+                            >
+                                {session.status === 'paused' ? 'Resume' : 'Pause'}
+                            </button>
+                            <button
+                                onClick={() => { setShowEngagement(!showEngagement); setHandRaisedCount(0); }}
+                                className="btn btn-secondary"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.4rem', position: 'relative',
+                                    background: showEngagement ? 'var(--color-primary)' : handRaisedCount > 0 ? 'rgba(245,158,11,0.1)' : '',
+                                    color: showEngagement ? 'white' : handRaisedCount > 0 ? '#f59e0b' : '',
+                                    borderColor: handRaisedCount > 0 && !showEngagement ? 'rgba(245,158,11,0.4)' : ''
+                                }}
+                                title="View Student Engagement"
+                            >
+                                <FiActivity size={16} /> Engagement
+                                {handRaisedCount > 0 && !showEngagement && (
+                                    <span style={{
+                                        position: 'absolute', top: '-6px', right: '-6px',
+                                        background: '#f59e0b', color: 'white',
+                                        borderRadius: '50%', width: '18px', height: '18px',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '0.65rem', fontWeight: 700,
+                                        animation: 'pulse 1.5s infinite'
+                                    }}>{handRaisedCount}</span>
+                                )}
+                            </button>
+                            <button
+                                onClick={triggerPulseCheck}
+                                className="btn btn-secondary"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(245, 158, 11, 0.1)', color: 'var(--color-warning)', borderColor: 'rgba(245, 158, 11, 0.2)' }}
+                                title="Check if students are paying attention"
+                            >
+                                <FiRadio size={16} /> Pulse Check
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowWhiteboard(true);
+                                    socketService.emitWhiteboardOpen(code || '');
+                                }}
+                                className="btn btn-secondary"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            >
+                                <FiMonitor size={16} /> Open Whiteboard
+                            </button>
+                            <button onClick={handleEndSession} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                                <FiPower size={16} /> End Session
+                            </button>
                         </div>
                     ) : (
                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -779,26 +795,26 @@ const SessionView: React.FC = () => {
                     padding: '2rem'
                 }}>
                     {!showLeftSidebar && (
-                            <button
-                                onClick={() => setShowLeftSidebar(true)}
-                                style={{
-                                    position: 'absolute',
-                                    top: '1rem',
-                                    left: '1rem',
-                                    zIndex: 10,
-                                    background: 'var(--color-surface)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    padding: '0.5rem',
-                                    borderRadius: 'var(--radius-sm)',
-                                    cursor: 'pointer',
-                                    color: 'var(--color-text-secondary)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem'
-                                }}
-                            >
-                                <FiChevronRight size={18} /> Show Questions
-                            </button>
+                        <button
+                            onClick={() => setShowLeftSidebar(true)}
+                            style={{
+                                position: 'absolute',
+                                top: '1rem',
+                                left: '1rem',
+                                zIndex: 10,
+                                background: 'var(--color-surface)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '0.5rem',
+                                borderRadius: 'var(--radius-sm)',
+                                cursor: 'pointer',
+                                color: 'var(--color-text-secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem'
+                            }}
+                        >
+                            <FiChevronRight size={18} /> Show Questions
+                        </button>
                     )}
 
                     {!showRightSidebar && (
@@ -839,6 +855,12 @@ const SessionView: React.FC = () => {
                             setShowEngagement={setShowEngagement}
                             pulseCheckResults={pulseCheckResults}
                             setToast={setToast}
+                            onHandRaiseChange={(count, raisedBy) => {
+                                setHandRaisedCount(count);
+                                if (raisedBy) {
+                                    setToast({ message: `✋ ${raisedBy} raised their hand!`, type: 'info' });
+                                }
+                            }}
                         />
                     ) : (
                         <StudentSessionView
@@ -986,6 +1008,25 @@ const SessionView: React.FC = () => {
                             </div>
                         )}
 
+                        {/* Live Engagement Panel - Teacher Only (always visible in sidebar) */}
+                        {isTeacher && (
+                            <div className="glass-card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+                                <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    📊 Student Engagement
+                                </h4>
+                                <EngagementTeacherView
+                                    students={session.students}
+                                    onHandRaiseChange={(count, raisedBy) => {
+                                        setHandRaisedCount(count);
+                                        if (raisedBy) {
+                                            setToast({ message: `✋ ${raisedBy} raised their hand!`, type: 'info' });
+                                        }
+                                    }}
+                                />
+                            </div>
+                        )}
+
+
                         <Leaderboard students={session.students} />
 
                         <div className="glass-card" style={{ padding: '1rem', marginTop: '1.5rem' }}>
@@ -1042,6 +1083,98 @@ const SessionView: React.FC = () => {
                 </aside>
 
             </main >
+
+            {/* Detailed Engagement Modal - Teacher Only */}
+            {isTeacher && showEngagement && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '2rem'
+                }}
+                    className="anim-fade-in"
+                >
+                    <div className="glass-card" style={{
+                        maxWidth: '600px',
+                        width: '100%',
+                        maxHeight: '90vh',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: 0,
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                        {/* Modal Header */}
+                        <div style={{
+                            padding: '1.25rem 1.5rem',
+                            borderBottom: '1px solid rgba(255,255,255,0.1)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'rgba(99,102,241,0.05)'
+                        }}>
+                            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <FiActivity size={20} color="var(--color-primary-light)" />
+                                Detailed Engagement Metrics
+                            </h3>
+                            <button
+                                onClick={() => setShowEngagement(false)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: 'none',
+                                    color: 'var(--color-text-muted)',
+                                    cursor: 'pointer',
+                                    padding: '0.4rem',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <FiX size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div style={{
+                            padding: '1.5rem',
+                            overflowY: 'auto',
+                            flex: 1
+                        }}>
+                            <EngagementTeacherView
+                                students={session.students}
+                                questions={questions}
+                                onHandRaiseChange={(count, raisedBy) => {
+                                    setHandRaisedCount(count);
+                                    if (raisedBy) {
+                                        setToast({ message: `✋ ${raisedBy} raised their hand!`, type: 'info' });
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div style={{
+                            padding: '1rem 1.5rem',
+                            borderTop: '1px solid rgba(255,255,255,0.1)',
+                            display: 'flex',
+                            justifyContent: 'flex-end'
+                        }}>
+                            <button className="btn btn-secondary" onClick={() => setShowEngagement(false)}>
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Custom End Session Modal */}
             {

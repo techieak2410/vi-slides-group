@@ -9,21 +9,23 @@ interface PollCardProps {
 
 const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
     const [voted, setVoted] = useState(false);
+    const [votedIndex, setVotedIndex] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-    const [timerActive, setTimerActive] = useState(false);
+
 
     // Track if user has voted locally for this poll ID
     useEffect(() => {
         const hasVoted = localStorage.getItem(`voted_poll_${poll._id}`);
+        const savedIndex = localStorage.getItem(`voted_poll_${poll._id}_index`);
         if (hasVoted) setVoted(true);
+        if (savedIndex !== null) setVotedIndex(parseInt(savedIndex, 10));
     }, [poll._id]);
 
     // Initialize and manage timer
     useEffect(() => {
         if (!poll.timerEnabled || !poll.isActive || voted) {
             setTimeRemaining(null);
-            setTimerActive(false);
             return;
         }
 
@@ -31,13 +33,12 @@ const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
 
         const startTime = new Date(poll.timerStartedAt).getTime();
         const durationMs = (poll.timerDuration || 0) * 1000;
-        
+
         const updateTimer = () => {
             const now = Date.now();
             const elapsed = now - startTime;
             const remaining = Math.max(0, Math.ceil((durationMs - elapsed) / 1000));
             setTimeRemaining(remaining);
-            setTimerActive(remaining > 0);
         };
 
         updateTimer();
@@ -54,9 +55,10 @@ const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
             const response = await pollService.votePoll(poll._id, index);
             if (response.success) {
                 setVoted(true);
+                setVotedIndex(index);
                 localStorage.setItem(`voted_poll_${poll._id}`, 'true');
+                localStorage.setItem(`voted_poll_${poll._id}_index`, index.toString());
                 setTimeRemaining(null);
-                setTimerActive(false);
             }
         } catch (err) {
             console.error('Vote error:', err);
@@ -138,6 +140,10 @@ const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
                 {poll.options.map((option, index) => {
                     const percentage = totalVotes === 0 ? 0 : Math.round((option.votes / totalVotes) * 100);
                     const showResults = !poll.isActive || voted || isTeacher;
+                    
+                    const isCorrect = poll.correctOptionIndex === index;
+                    const isVoted = votedIndex === index;
+                    const choiceRevealed = poll.correctOptionIndex !== undefined && poll.correctOptionIndex !== null;
 
                     return (
                         <div key={index} style={{ position: 'relative' }}>
@@ -151,19 +157,20 @@ const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
                                         padding: '0.75rem 1rem',
                                         background: 'rgba(255,255,255,0.03)'
                                     }}
-                                    disabled={loading || (poll.timerEnabled && !timerActive)}
+                                    disabled={loading || (poll.timerEnabled && timeRemaining === 0)}
                                 >
                                     {option.text}
-                                    {poll.timerEnabled && !timerActive && <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#ef4444' }}>Time's up!</span>}
+                                    {poll.timerEnabled && timeRemaining === 0 && <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#ef4444' }}>Time's up!</span>}
                                 </button>
                             ) : (
                                 <div style={{
                                     padding: '0.85rem 1rem',
                                     borderRadius: 'var(--radius-md)',
-                                    background: 'rgba(255,255,255,0.02)',
+                                    background: choiceRevealed && isCorrect ? 'rgba(16, 185, 129, 0.1)' : choiceRevealed && isVoted && !isCorrect ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.02)',
                                     position: 'relative',
                                     overflow: 'hidden',
-                                    border: '1px solid rgba(255,255,255,0.05)'
+                                    border: choiceRevealed && isCorrect ? '1px solid #10b981' : choiceRevealed && isVoted && !isCorrect ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.05)',
+                                    transition: 'all 0.3s ease'
                                 }}>
                                     {/* Animated Progress Bar */}
                                     <div style={{
@@ -172,7 +179,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
                                         top: 0,
                                         bottom: 0,
                                         width: `${percentage}%`,
-                                        background: 'var(--gradient-primary)',
+                                        background: choiceRevealed && isCorrect ? '#10b981' : 'var(--gradient-primary)',
                                         opacity: 0.15,
                                         transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
                                         zIndex: 0
@@ -181,6 +188,27 @@ const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{option.text}</span>
+                                            
+                                            {choiceRevealed && isCorrect && (
+                                                <span style={{ 
+                                                    background: '#10b981', color: 'white', 
+                                                    padding: '0.1rem 0.4rem', borderRadius: '4px', 
+                                                    fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase' 
+                                                }}>
+                                                    Correct Choice
+                                                </span>
+                                            )}
+                                            
+                                            {choiceRevealed && isVoted && !isCorrect && (
+                                                <span style={{ 
+                                                    background: '#ef4444', color: 'white', 
+                                                    padding: '0.1rem 0.4rem', borderRadius: '4px', 
+                                                    fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase' 
+                                                }}>
+                                                    Incorrect Choice
+                                                </span>
+                                            )}
+
                                             {isTeacher && poll.isActive && (
                                                 <button
                                                     onClick={(e) => {
@@ -199,6 +227,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, isTeacher, onClose }) => {
                                             )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {isVoted && <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>(You)</span>}
                                             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{option.votes} votes</span>
                                             <span style={{ fontWeight: 'bold', color: 'var(--color-primary-light)', minWidth: '40px', textAlign: 'right' }}>{percentage}%</span>
                                         </div>

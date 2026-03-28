@@ -237,10 +237,12 @@ export const declarePollWinner = async (req: Request, res: Response): Promise<vo
             winnerCount: winners.length
         });
 
-        // Trigger confetti for everyone
+        // Trigger confetti for students who voted correctly
+        const winnerIds = winners.map((w: any) => w.user.toString());
         emitToSession(session.code, 'celebration', {
             type: 'confetti',
-            duration: 5000
+            duration: 5000,
+            winnerIds
         });
 
         // Also emit points update for each winner so leaderboards refresh
