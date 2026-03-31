@@ -7,13 +7,11 @@ import { sessionService } from '../../services/sessionService';
 import { 
   ArrowRightIcon,
   HashtagIcon,
-  ClockIcon,
   AcademicCapIcon,
   CommandLineIcon,
   CpuChipIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
-import Toast from '../../components/Toast';
 
 const StudentDashboard: React.FC = () => {
     const { user } = useAuth();
@@ -21,7 +19,6 @@ const StudentDashboard: React.FC = () => {
     const [joinCode, setJoinCode] = useState('');
     const [pastSessions, setPastSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -29,7 +26,7 @@ const StudentDashboard: React.FC = () => {
                 const response = await sessionService.getStudentSessions();
                 if (response.success) setPastSessions(response.data);
             } catch (err) {
-                console.error("Sync error:", err);
+                console.error('Sync error:', err);
             } finally {
                 setLoading(false);
             }

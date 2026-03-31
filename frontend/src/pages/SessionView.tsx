@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { sessionService, Session } from '../services/sessionService';
 import { questionService, Question } from '../services/questionService';
+import { exportQuestionsToPPT } from '../services/pptExportService';
 import { socketService } from '../services/socketService';
 import QuestionCard from '../components/QuestionCard'; import PollCard from '../components/PollCard';
 import { pollService, Poll } from '../services/pollService';
@@ -385,6 +386,20 @@ const SessionView: React.FC = () => {
         }
     };
 
+    const handleExportPPT = async () => {
+        if (!session) return;
+        try {
+            setToast({ message: 'Generating PowerPoint...', type: 'info' });
+            await exportQuestionsToPPT({ title: session.title, code: session.code }, questions);
+            setToast({ message: 'PowerPoint exported successfully!', type: 'success' });
+        } catch (err) {
+            console.error('PPT Export Error:', err);
+            setToast({ message: 'Failed to export PowerPoint', type: 'error' });
+        } finally {
+            setShowExportOptions(false);
+        }
+    };
+
     const handleEndSession = () => {
         setShowEndModal(true);
     };
@@ -582,6 +597,14 @@ const SessionView: React.FC = () => {
                                             onMouseOut={(e) => e.currentTarget.style.background = 'none'}
                                         >
                                             <FiFileText size={16} style={{ marginRight: '8px' }} /> PDF Document
+                                        </button>
+                                        <button
+                                            onClick={handleExportPPT}
+                                            style={{ display: 'flex', alignItems: 'center', width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: 'none', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(125,125,125,0.1)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                                        >
+                                            <FiMonitor size={16} style={{ marginRight: '8px' }} /> PowerPoint Slides
                                         </button>
                                         <button
                                             onClick={exportToCSV}

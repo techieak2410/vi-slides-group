@@ -18,13 +18,13 @@ import {
 } from '@heroicons/react/24/outline';
 
 const TeacherDashboard: React.FC = () => {
-    const { user, logout } = useAuth();
-    const { theme, toggleTheme } = useTheme();
+    const { user } = useAuth();
+    const { toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
     const [sessionTitle, setSessionTitle] = useState('');
-    const [activeSession, setActiveSession] = useState<any>(null);
+    const [, setActiveSession] = useState<any>(null);
     const [pastSessions, setPastSessions] = useState<any[]>([]);
 
     useEffect(() => {

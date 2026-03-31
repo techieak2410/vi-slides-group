@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { sessionService, Session } from '../services/sessionService';
 
 // Professional Icons (Matches your Teacher/Student Dashboards)
-import { 
-  CheckCircleIcon, 
-  UserGroupIcon, 
-  ChatBubbleBottomCenterTextIcon, 
-  ClockIcon,
+import {
+  CheckCircleIcon,
+  ChatBubbleBottomCenterTextIcon,
   ClipboardDocumentCheckIcon,
   CpuChipIcon,
   ArrowLeftIcon

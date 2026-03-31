@@ -47,7 +47,7 @@ const EngagementTeacherView: React.FC<EngagementTeacherViewProps> = ({ students 
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [activeView, setActiveView] = useState<'dashboard' | 'student-detail'>('dashboard');
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-    const [notifCount, setNotifCount] = useState(0);
+    const [, setNotifCount] = useState(0);
     
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const scrollRefs = useRef<Map<string, HTMLDivElement>>(new Map());
