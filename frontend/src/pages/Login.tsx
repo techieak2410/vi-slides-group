@@ -42,7 +42,7 @@ const BrainIcon = () => (
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login,updateUser } = useAuth();
 
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
@@ -75,18 +75,32 @@ const Login: React.FC = () => {
         }
     };
 
-    const handleGoogleSuccess = async (credentialResponse: any) => {
-        try {
-            const res = await authService.googleLogin(credentialResponse.credential);
-            if (res.success) {
-                sessionStorage.setItem('token', res.token);
-                sessionStorage.setItem('user', JSON.stringify(res.user));
-                handleNavigation(res.user);
-            }
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Google identity verification failed.');
+   const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+        setLoading(true);
+        // 1. Call the service
+        const res = await authService.googleLogin(credentialResponse.credential);
+        
+        if (res.success) {
+            // 2. IMPORTANT: We must update the Context State so the App knows we are logged in
+            // If your AuthContext doesn't have a specific googleLogin function, 
+            // you can use the 'updateUser' function we created earlier.
+            
+            sessionStorage.setItem('token', res.token);
+            sessionStorage.setItem('user', JSON.stringify(res.user));
+            
+            // This line tells the whole app the user has arrived
+            updateUser(res.user); 
+            
+            // 3. Now navigate
+            handleNavigation(res.user);
         }
-    };
+    } catch (err: any) {
+        setError(err.response?.data?.message || 'Google identity verification failed.');
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <div className="nexus-layout">

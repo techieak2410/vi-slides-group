@@ -156,29 +156,34 @@ const SessionView: React.FC = () => {
                         setToast({ message: `Refined ${data.count} questions for clarity`, type: 'info' });
                     });
 
-                    socketService.offBatchRefinementFailed();
+// REPLACE Lines 158 - 171 with this:
+socketService.offParticipantsUpdated();
+socketService.onParticipantsUpdated((allParticipants: any[]) => {
+    console.log('👥 Synced Student List from Backend:', allParticipants);
+    setSession(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            students: allParticipants // Overwrites local state with backend's Map
+        };
+    });
+});
+
+// Keep this just for the notification toast
+socketService.offUserJoined();
+socketService.onUserJoined((newUser: any) => {
+    setToast({ message: `${newUser.name} joined!`, type: 'info' });
+});
                     socketService.onBatchRefinementFailed((data: any) => {
                         console.error('❌ Batch refinement failed:', data.error);
                         setToast({ message: 'AI Refinement failed, retrying...', type: 'warning' });
                     });
 
                     // User Join Listener
-                    socketService.offUserJoined();
-                    socketService.onUserJoined((newUser: any) => {
-                        console.log('👤 User joined:', newUser);
-                        setSession(prev => {
-                            if (!prev) return null;
-                            // Check if student already exists
-                            const exists = prev.students.find((s: any) => s._id === newUser._id || s.id === newUser._id);
-                            if (exists) return prev;
-
-                            return {
-                                ...prev,
-                                students: [...prev.students, newUser]
-                            };
-                        });
-                        setToast({ message: `${newUser.name} joined!`, type: 'info' });
-                    });
+socketService.offUserJoined();
+socketService.onUserJoined((newUser: any) => {
+    setToast({ message: `${newUser.name} joined!`, type: 'info' });
+});
 
                     // Whiteboard Socket Listeners
                     socketService.offWhiteboardEvents();

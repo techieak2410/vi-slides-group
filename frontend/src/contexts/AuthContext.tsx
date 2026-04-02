@@ -83,6 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
         window.location.href = '/login';
     };
+    
 
     const updateUser = (updatedUser: User) => {
         sessionStorage.setItem('user', JSON.stringify(updatedUser));
