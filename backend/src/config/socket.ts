@@ -6,13 +6,12 @@ import mongoose from 'mongoose';
 
 let io: SocketServer;
 
-// Map to track socket -> user/session details for disconnect handling
 const socketMap = new Map<string, { userId: string; name: string; email: string; sessionCode: string }>();
 
-// Map to track pulse check responses per session
-const pulseCheckResponses = new Map<string, Set<string>>();
+// FIX 2: Track all participants per session so we can emit the full list
+const sessionParticipants = new Map<string, Map<string, { _id: string; name: string; email: string; points: number; avatar?: string }>>();
 
-// Map to keep live whiteboard drawing history per session
+const pulseCheckResponses = new Map<string, Set<string>>();
 const whiteboardHistory = new Map<string, Array<any>>();
 
 export const initSocket = (server: HttpServer) => {
@@ -26,8 +25,6 @@ export const initSocket = (server: HttpServer) => {
     io.on('connection', (socket: Socket) => {
         console.log(`🔌 New client connected: ${socket.id}`);
 
-        // Join a session room
-        // Payload can be just a code (legacy/string) or object { sessionCode, user }
         socket.on('join_session', async (payload: any) => {
             let sessionCode = '';
             let user = null;
@@ -44,10 +41,8 @@ export const initSocket = (server: HttpServer) => {
             socket.join(sessionCode);
             console.log(`📁 User ${socket.id} joined session: ${sessionCode}`);
 
-            // If we have user details, record attendance
             if (user && user._id) {
                 try {
-                    // Update socket map
                     socketMap.set(socket.id, {
                         userId: user._id,
                         name: user.name,
@@ -55,7 +50,6 @@ export const initSocket = (server: HttpServer) => {
                         sessionCode
                     });
 
-                    // Add attendance record
                     await Session.findOneAndUpdate(
                         { code: sessionCode },
                         {
@@ -70,20 +64,38 @@ export const initSocket = (server: HttpServer) => {
                         }
                     );
 
-                    // Fetch fresh user data (specifically points)
-                    const freshUser = await User.findById(user._id).select('name email points avatar');
+                    const freshUser = await User.findById(user._id).select('name email points avatar role');
 
-                    // Broadcast that user joined to update leaderboards
-                    io.to(sessionCode).emit('user_joined', freshUser);
+                    // FIX 1: Skip teachers — they should not appear in the participants list
+                    if (freshUser && freshUser.role === 'Teacher') {
+                        return;
+                    }
 
-                    // console.log(`Attendance recorded for ${user.name}`);
+                    // FIX 2: Add this student to the session participants map
+                    if (!sessionParticipants.has(sessionCode)) {
+                        sessionParticipants.set(sessionCode, new Map());
+                    }
+
+                    if (freshUser) {
+                        sessionParticipants.get(sessionCode)!.set(user._id.toString(), {
+                            _id: freshUser._id.toString(),
+                            name: freshUser.name,
+                            email: freshUser.email,
+                            points: freshUser.points,
+                            avatar: freshUser.avatar
+                        });
+                    }
+
+                    // FIX 2: Emit the full participants array so the frontend always has the complete list
+                    const allParticipants = Array.from(sessionParticipants.get(sessionCode)!.values());
+                    io.to(sessionCode).emit('participants_updated', allParticipants);
+
                 } catch (error) {
                     console.error('Error recording attendance:', error);
                 }
             }
         });
 
-        // Leave a session room matches logic for disconnect essentially
         socket.on('leave_session', async (sessionCode: string) => {
             socket.leave(sessionCode);
             console.log(`🚪 User ${socket.id} left session: ${sessionCode}`);
@@ -105,18 +117,15 @@ export const initSocket = (server: HttpServer) => {
         });
 
         socket.on('whiteboard_draw', ({ sessionCode, data }) => {
-            // Save drawing action to history so users who reopen can catch up
             if (!whiteboardHistory.has(sessionCode)) {
                 whiteboardHistory.set(sessionCode, []);
             }
             const existing = whiteboardHistory.get(sessionCode) || [];
             existing.push(data);
-            // keep memory bounded
             if (existing.length > 3000) {
                 existing.splice(0, existing.length - 3000);
             }
             whiteboardHistory.set(sessionCode, existing);
-
             socket.to(sessionCode).emit('whiteboard_draw', data);
         });
 
@@ -149,7 +158,6 @@ export const initSocket = (server: HttpServer) => {
 
         // Private Messaging
         socket.on('send_private_msg', ({ recipientId, message, sender }) => {
-            // Find recipient's socket(s)
             for (const [sId, data] of socketMap.entries()) {
                 if (data.userId.toString() === recipientId.toString() && data.sessionCode === sender.sessionCode) {
                     io.to(sId).emit('receive_private_msg', {
@@ -163,46 +171,46 @@ export const initSocket = (server: HttpServer) => {
 
         // Pulse Check Features
         socket.on('pulse_check_init', ({ sessionCode }) => {
-            // Initialize response tracking for this pulse check
             pulseCheckResponses.set(sessionCode, new Set<string>());
             socket.to(sessionCode).emit('pulse_check_start');
         });
 
         socket.on('pulse_check_response', async ({ userId, sessionCode }) => {
             console.log(`💓 Pulse check response from user ${userId} in session ${sessionCode}`);
-            
-            // Track this response
+
             if (!pulseCheckResponses.has(sessionCode)) {
                 pulseCheckResponses.set(sessionCode, new Set<string>());
             }
             pulseCheckResponses.get(sessionCode)?.add(userId);
-            
+
             try {
-                // Reward 15 bonus points for quick response
                 const user = await User.findByIdAndUpdate(userId, { $inc: { points: 15 } }, { new: true });
 
-                // Also add points to session leaderboard
-                // Explicitly cast userId to ObjectId for the array filter match
                 const userObjectId = new mongoose.Types.ObjectId(userId);
-
                 const result = await Session.updateOne(
                     { code: sessionCode, "attendance.student": userObjectId },
                     { $inc: { "attendance.$.score": 15 } }
                 );
 
                 if (result.matchedCount === 0) {
-                    console.warn(`⚠️ Failed to update session score for user ${userId}. Attendance record not found for code ${sessionCode}.`);
+                    console.warn(`⚠️ Failed to update session score for user ${userId}.`);
                 } else {
-                    console.log(`✅ Session score updated for user ${userId} (+15 pts). Matched: ${result.matchedCount}, Modified: ${result.modifiedCount}`);
+                    console.log(`✅ Session score updated for user ${userId} (+15 pts).`);
                 }
 
                 if (user) {
+                    // FIX 2: Keep the in-memory participants map in sync with new points
+                    if (sessionParticipants.has(sessionCode)) {
+                        const participant = sessionParticipants.get(sessionCode)!.get(userId.toString());
+                        if (participant) {
+                            participant.points = user.points;
+                        }
+                    }
                     io.to(sessionCode).emit('points_updated', { userId, points: user.points, name: user.name });
                 }
-                
-                // Emit updated response count to all users in session
+
                 const responseCount = pulseCheckResponses.get(sessionCode)?.size || 0;
-                io.to(sessionCode).emit('pulse_check_update', { 
+                io.to(sessionCode).emit('pulse_check_update', {
                     respondedCount: responseCount,
                     userId,
                     userName: user?.name || 'Unknown'
@@ -212,12 +220,12 @@ export const initSocket = (server: HttpServer) => {
             }
         });
 
-        // 1. Emoji Reaction
+        // Emoji Reaction
         socket.on('emoji_reaction', ({ sessionCode, emoji, user }) => {
             io.to(sessionCode).emit('stream_emoji', { emoji, user, id: Math.random().toString(36).substr(2, 9) });
         });
 
-        // 2. Save Bookmark
+        // Save Bookmark
         socket.on('save_bookmark', async ({ userId, sessionCode, sessionTitle }) => {
             try {
                 await User.findByIdAndUpdate(userId, {
@@ -232,15 +240,11 @@ export const initSocket = (server: HttpServer) => {
             }
         });
 
-        // 3. Trigger Mystery Spotlight
+        // Trigger Mystery Spotlight
         socket.on('trigger_spotlight', async ({ sessionCode, teacherId }) => {
-            // Get all unique users in this session from socketMap
-            // Use a Map to deduplicate by userId
             const uniqueStudentsMap = new Map();
 
             for (const [sId, data] of socketMap.entries()) {
-                // Filter: must be in same session AND not be the teacher
-                // Use .toString() to ensure we compare strings (handles both string and ObjectId)
                 if (data.sessionCode === sessionCode && data.userId.toString() !== teacherId.toString()) {
                     uniqueStudentsMap.set(data.userId.toString(), { id: data.userId, name: data.name });
                 }
@@ -253,12 +257,8 @@ export const initSocket = (server: HttpServer) => {
                 return;
             }
 
-            // Pick a random student
             const winner = sessionUsers[Math.floor(Math.random() * sessionUsers.length)];
-
-            console.log(`🎯 Spotlight winner in ${sessionCode}: ${winner.name} (Choice from ${sessionUsers.length} students)`);
-
-            // Broadcast the result to everyone in the room
+            console.log(`🎯 Spotlight winner in ${sessionCode}: ${winner.name}`);
             io.to(sessionCode).emit('spotlight_result', { winner, spinDuration: 3000 });
         });
     });
@@ -266,7 +266,6 @@ export const initSocket = (server: HttpServer) => {
     return io;
 };
 
-// Helper to update leave time
 const handleUserLeave = async (socketId: string) => {
     const data = socketMap.get(socketId);
     if (!data) return;
@@ -274,14 +273,8 @@ const handleUserLeave = async (socketId: string) => {
     const { userId, sessionCode } = data;
 
     try {
-        // Find the specific session and update the LAST attendance record for this student that has no leaveTime
-        // This is a bit tricky with atomic operators, so we might need to find first.
-
-        // Simplest approach: Find session, find the relevant attendance entry (last one for this user), update it.
         const session = await Session.findOne({ code: sessionCode });
         if (session) {
-            // Find the last entry for this student that doesn't have a leaveTime
-            // We search from end
             let entryIndex = -1;
             for (let i = session.attendance.length - 1; i >= 0; i--) {
                 if (session.attendance[i].student.toString() === userId.toString() && !session.attendance[i].leaveTime) {
@@ -293,14 +286,19 @@ const handleUserLeave = async (socketId: string) => {
             if (entryIndex !== -1) {
                 session.attendance[entryIndex].leaveTime = new Date();
                 await session.save();
-                // console.log(`Leave time recorded for ${data.name}`);
             }
         }
     } catch (error) {
         console.error('Error recording leave time:', error);
     }
 
-    // Clear from map
+    // FIX 2: Remove from participants map and broadcast the updated list
+    if (sessionParticipants.has(sessionCode)) {
+        sessionParticipants.get(sessionCode)!.delete(userId.toString());
+        const allParticipants = Array.from(sessionParticipants.get(sessionCode)!.values());
+        io.to(sessionCode).emit('participants_updated', allParticipants);
+    }
+
     socketMap.delete(socketId);
 };
 
@@ -311,7 +309,6 @@ export const getIO = () => {
     return io;
 };
 
-// Helper function to emit events to a session room
 export const emitToSession = (sessionCode: string, event: string, data: any) => {
     if (io) {
         io.to(sessionCode).emit(event, data);
