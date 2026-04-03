@@ -169,7 +169,6 @@ socketService.onParticipantsUpdated((allParticipants: any[]) => {
     });
 });
 
-// Keep this just for the notification toast
 socketService.offUserJoined();
 socketService.onUserJoined((newUser: any) => {
     setToast({ message: `${newUser.name} joined!`, type: 'info' });
@@ -179,7 +178,6 @@ socketService.onUserJoined((newUser: any) => {
                         setToast({ message: 'AI Refinement failed, retrying...', type: 'warning' });
                     });
 
-                    // User Join Listener
 socketService.offUserJoined();
 socketService.onUserJoined((newUser: any) => {
     setToast({ message: `${newUser.name} joined!`, type: 'info' });
