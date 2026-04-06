@@ -34,7 +34,6 @@ class SocketService {
         }
     }
 
-    // Add this inside the SocketService class in your services/socketService.ts
 
 onParticipantsUpdated(callback: (participants: any[]) => void) {
     if (this.socket) {
